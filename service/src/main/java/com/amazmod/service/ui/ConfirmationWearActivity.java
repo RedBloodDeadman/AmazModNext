@@ -206,6 +206,7 @@ public class ConfirmationWearActivity extends Activity implements DelayedConfirm
 
         restartText.setText(getString(R.string.please_wait));
 
+        Logger.debug("ConfirmationWearActivity finishConfirmationActivity isRunning: " + isRunning);
         if (isRunning && (Constants.INSTALL.equals(paramMode) || Constants.DELETE.equals(paramMode))) {
 
             Logger.debug("ConfirmationWearActivity finishConfirmationActivity isRunning: " + isRunning);
@@ -213,9 +214,10 @@ public class ConfirmationWearActivity extends Activity implements DelayedConfirm
             runCommand(DENSITY_RESET);
             if (Constants.DELETE.equals(paramMode)) {
                 final File apkFile = new File(paramPkg);
-                if (apkFile.exists())
+                if (apkFile.exists()) {
                     Logger.debug("ConfirmationWearActivity finishConfirmationActivity deleting: " + paramPkg);
                     apkFile.delete();
+                }
             }
 
             mHandler.postDelayed(delayedFinish, 2000);
@@ -234,13 +236,12 @@ public class ConfirmationWearActivity extends Activity implements DelayedConfirm
         if (requestCode == INSTALL_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 Logger.debug("ConfirmationWearActivity onActivityResult RESULT_OK");
-                finishConfirmationActivity();
             } else if (resultCode == RESULT_CANCELED) {
                 Logger.debug("ConfirmationWearActivity onActivityResult RESULT_CANCELED");
-                finishConfirmationActivity();
             } else if (resultCode == RESULT_FIRST_USER) {
                 Logger.debug("ConfirmationWearActivity onActivityResult RESULT_FIRST_USER");
             }
+            finishConfirmationActivity();
         }
     }
 

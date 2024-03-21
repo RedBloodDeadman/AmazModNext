@@ -18,6 +18,10 @@ public class Permissions {
 
     private static final String TAG_LOCAL = " Permissions ";
 
+    public static boolean checkOverlayPermission(Context context) {
+        return Settings.canDrawOverlays(context);
+    }
+
     public static boolean hasNotificationAccess(Context context) {
         ContentResolver contentResolver = context.getContentResolver();
         String enabledNotificationListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners");

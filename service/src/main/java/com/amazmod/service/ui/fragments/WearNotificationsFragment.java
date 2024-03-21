@@ -45,7 +45,7 @@ public class WearNotificationsFragment extends Fragment {
 
     private BoxInsetLayout rootLayout;
     private RelativeLayout wearNotificationsFrameLayout;
-	private WearableListView listView;
+    private WearableListView listView;
     private TextView mHeader;
     private ProgressBar progressBar;
 
@@ -93,6 +93,21 @@ public class WearNotificationsFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        Logger.info("WearNotificationsFragment onResume");
+        updateNotificationsList();
+    }
+
+    private void updateNotificationsList() {
+        if (notificationInfoList != null && mAdapter != null) {
+//            notificationInfoList.clear();
+//            mAdapter.clear();
+            loadNotifications();
+        }
+    }
+
+    @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Logger.info("WearNotificationsFragment onViewCreated");
@@ -114,9 +129,8 @@ public class WearNotificationsFragment extends Fragment {
         Logger.info("WearNotificationsFragment onClick position: " + position);
 
         if (getResources().getString(R.string.refresh).equals(notificationInfoList.get(position).getNotificationTitle())) {
-
+            mAdapter = null;
             notificationInfoList.clear();
-            mAdapter.clear();
             loadNotifications();
 
         } else if (getResources().getString(R.string.clear).equals(notificationInfoList.get(position).getNotificationTitle())) {
@@ -129,7 +143,8 @@ public class WearNotificationsFragment extends Fragment {
                             NotificationStore.clear();
                             resetNotificationsCounter();
                             getActivity().finish();
-                        }})
+                        }
+                    })
                     .setNegativeButton(android.R.string.no, null).show();
         } else
             showNotification(position);
@@ -173,9 +188,7 @@ public class WearNotificationsFragment extends Fragment {
         mHeader.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                notificationInfoList.clear();
-                mAdapter.clear();
-                loadNotifications();
+                updateNotificationsList();
             }
 
         });
@@ -186,15 +199,16 @@ public class WearNotificationsFragment extends Fragment {
 
                 if (!notificationInfoList.isEmpty())
                     new AlertDialog.Builder(getActivity())
-                        .setTitle(mContext.getResources().getString(R.string.clear_notifications))
-                        .setMessage(mContext.getResources().getString(R.string.confirmation))
-                        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                NotificationStore.clear();
-                                resetNotificationsCounter();
-                                getActivity().finish();
-                            }})
-                        .setNegativeButton(android.R.string.no, null).show();
+                            .setTitle(mContext.getResources().getString(R.string.clear_notifications))
+                            .setMessage(mContext.getResources().getString(R.string.confirmation))
+                            .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                                public void onClick(DialogInterface dialog, int whichButton) {
+                                    NotificationStore.clear();
+                                    resetNotificationsCounter();
+                                    getActivity().finish();
+                                }
+                            })
+                            .setNegativeButton(android.R.string.no, null).show();
                 return false;
             }
         });
@@ -218,29 +232,29 @@ public class WearNotificationsFragment extends Fragment {
         final Drawable clear = mContext.getResources().getDrawable(R.drawable.outline_clear_all_white_24);
 
         Flowable.fromCallable(new Callable<List<NotificationInfo>>() {
-            @Override
-            public List<NotificationInfo> call() {
-                Logger.debug("WearNotificationsFragment loadNotifications call");
+                    @Override
+                    public List<NotificationInfo> call() {
+                        Logger.debug("WearNotificationsFragment loadNotifications call");
 
-                List<NotificationInfo> notificationInfoList = new ArrayList<>();
-                if (NotificationStore.getKeySet() != null) {
-                    for (String key : NotificationStore.getKeySet()) {
-                        Logger.debug("WearNotificationsFragment loadNotifications adding key: " + key);
-                        notificationInfoList.add(new NotificationInfo(NotificationStore.getCustomNotification(key), key));
+                        List<NotificationInfo> notificationInfoList = new ArrayList<>();
+                        if (NotificationStore.getKeySet() != null) {
+                            for (String key : NotificationStore.getKeySet()) {
+                                Logger.debug("WearNotificationsFragment loadNotifications adding key: " + key);
+                                notificationInfoList.add(new NotificationInfo(NotificationStore.getCustomNotification(key), key));
+                            }
+                        }
+
+                        if (!notificationInfoList.isEmpty())
+                            notificationInfoList.add(new NotificationInfo(getResources().getString(R.string.refresh), getString(R.string.reload_items), "", drawable, null, "", "0"));
+
+                        if (!notificationInfoList.isEmpty())
+                            notificationInfoList.add(new NotificationInfo(getResources().getString(R.string.clear), getString(R.string.clear_all_items), "", clear, null, "", "0"));
+
+                        sortNotifications(notificationInfoList);
+                        WearNotificationsFragment.this.notificationInfoList = notificationInfoList;
+                        return notificationInfoList;
                     }
-                }
-
-                if (!notificationInfoList.isEmpty())
-                    notificationInfoList.add(new NotificationInfo(getResources().getString(R.string.refresh), getString(R.string.reload_items),"", drawable, null, "", "0"));
-
-                if (!notificationInfoList.isEmpty())
-                    notificationInfoList.add(new NotificationInfo(getResources().getString(R.string.clear), getString(R.string.clear_all_items),"", clear, null, "", "0"));
-
-                sortNotifications(notificationInfoList);
-                WearNotificationsFragment.this.notificationInfoList = notificationInfoList;
-                return notificationInfoList;
-            }
-        }).subscribeOn(Schedulers.computation())
+                }).subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.single())
                 .subscribe(new Consumer<List<NotificationInfo>>() {
                     @Override
@@ -249,18 +263,24 @@ public class WearNotificationsFragment extends Fragment {
                             @Override
                             public void run() {
                                 Logger.debug("WearNotificationsFragment loadNotifications run");
-                                mAdapter = new NotificationListAdapter(mContext, notificationInfoList);
+                                if (mAdapter == null) {
+                                    mAdapter = new NotificationListAdapter(mContext, notificationInfoList);
+                                    listView.setAdapter(mAdapter);
+                                    listView.post(new Runnable() {
+                                        public void run() {
+                                            Logger.debug("WearNotificationsFragment loadNotifications scrollToTop");
+                                            listView.smoothScrollToPosition(0);
+                                        }
+                                    });
+                                } else {
+                                    mAdapter.setItems(notificationInfoList);
+                                    mAdapter.notifyDataSetChanged();
+                                }
                                 if (notificationInfoList.isEmpty())
                                     mHeader.setText(mContext.getResources().getString(R.string.empty));
                                 else
                                     mHeader.setText(mContext.getResources().getString(R.string.notifications));
-                                listView.setAdapter(mAdapter);
-                                listView.post(new Runnable() {
-                                    public void run() {
-                                        Logger.debug("WearNotificationsFragment loadNotifications scrollToTop");
-                                        listView.smoothScrollToPosition(0);
-                                    }
-                                });
+
                                 progressBar.setVisibility(View.GONE);
                                 listView.setVisibility(View.VISIBLE);
                             }

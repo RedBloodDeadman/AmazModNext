@@ -232,4 +232,20 @@ public class FragmentUtil {
 
     }
 
+    public static int getValueInDP(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInDP(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, context.getResources().getDisplayMetrics());
+    }
+
+    // value in PX
+    public static int getValueInPixel(Context context, int value){
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
+
+    public static float getValueInPixel(Context context, float value){
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_PX, value, context.getResources().getDisplayMetrics());
+    }
 }

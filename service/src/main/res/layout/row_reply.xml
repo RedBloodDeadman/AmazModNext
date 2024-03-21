@@ -4,19 +4,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:layout_gravity="center_vertical"
+    android:id="@+id/row_reply_view"
     android:foreground="?selectableItemBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
     <androidx.emoji.widget.EmojiTextView
         android:id="@+id/row_reply_text"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         android:drawableLeft="@drawable/send_white"
         android:drawablePadding="8dp"
         android:ellipsize="end"
-        android:gravity="bottom|start"
+        android:gravity="center"
         android:textAlignment="center"
         android:textColor="#FFFFFFFF"
         android:textSize="16sp"
@@ -24,6 +25,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:text="This is a Long Title for a Reply that has more than one line" />
+        tools:text="Yes" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

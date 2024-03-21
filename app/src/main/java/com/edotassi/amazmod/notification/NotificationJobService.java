@@ -267,6 +267,8 @@ public class NotificationJobService extends JobService implements TransportServi
 
         DataBundle dataBundle = NotificationStore.getRemovedNotification(uuid);
 
+        Logger.debug("processNotificationRemoved dataBundle: " + dataBundle);
+
         if(!BluetoothAdapter.getDefaultAdapter().isEnabled()){
             AmazModApplication.setWatchConnected(false);
             Logger.warn("Bluetooth is disabled");

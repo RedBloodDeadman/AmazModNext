@@ -26,6 +26,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.amazmod.service.Constants;
 import com.amazmod.service.R;
 import com.amazmod.service.adapters.AppInfoAdapter;
 import com.amazmod.service.helper.RecyclerTouchListener;
@@ -52,7 +53,7 @@ import io.reactivex.schedulers.Schedulers;
 public class WearFilesFragment extends Fragment {
 
     private RelativeLayout wearFilesFrameLayout;
-	private WearableListView listView;
+    private WearableListView listView;
     private TextView mHeader;
     private ProgressBar progressBar;
 
@@ -122,18 +123,18 @@ public class WearFilesFragment extends Fragment {
         if (PARENT_DIR.equals(fileName) && PARENT_DIR.equals(filePath)) {
             mAdapter.clear();
             mCurrentDir = getPreviousDir();
-            loadFiles(mCurrentDir);
+            loadFiles(mCurrentDir, true);
 
         } else if (getResources().getString(R.string.refresh).equals(fileName) && getResources().getString(R.string.refresh).equals(filePath)) {
 
             if (!(fileInfoList == null))
                 fileInfoList.clear();
 
-            loadFiles(mCurrentDir);
+            loadFiles(mCurrentDir, true);
 
         } else {
 
-            File file = new File (filePath);
+            File file = new File(filePath);
             if (file.exists()) {
 
                 if (file.isDirectory())
@@ -156,7 +157,7 @@ public class WearFilesFragment extends Fragment {
         if (!(PARENT_DIR.equals(fileName) && PARENT_DIR.equals(filePath))
                 && !(getResources().getString(R.string.refresh).equals(fileName) && getResources().getString(R.string.refresh).equals(filePath))) {
 
-            File file = new File (filePath);
+            File file = new File(filePath);
             if (file.exists()) {
                 deleteFile(file);
             }
@@ -179,13 +180,13 @@ public class WearFilesFragment extends Fragment {
         listView.addOnItemTouchListener(new RecyclerTouchListener(mContext, listView, new RecyclerTouchListener.ClickListener() {
             @Override
             public void onClick(View view, int position) {
-                Logger.debug( "WearFilesFragment addOnItemTouchListener onClick");
+                Logger.debug("WearFilesFragment addOnItemTouchListener onClick");
                 onItemClick(position);
             }
 
             @Override
             public void onLongClick(View view, int position) {
-                Logger.debug( "WearFilesFragment addOnItemTouchListener onLongClick");
+                Logger.debug("WearFilesFragment addOnItemTouchListener onLongClick");
                 onItemLongClick(position);
             }
         }));
@@ -198,42 +199,42 @@ public class WearFilesFragment extends Fragment {
 
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
             mCurrentDir = Environment.getExternalStorageDirectory();
-            Logger.info( "WearFilesFragment init mCurrentDir: " + String.valueOf(mCurrentDir));
+            Logger.info("WearFilesFragment init mCurrentDir: " + String.valueOf(mCurrentDir));
 
         } else {
 
-            Logger.error( "External storage unavailable");
+            Logger.error("External storage unavailable");
         }
 
         mHeader.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                showToast(getString(R.string.free_space)+": " + formatBytes(getFreeSpace(mCurrentDir.getPath())));
+                showToast(getString(R.string.free_space) + ": " + formatBytes(getFreeSpace(mCurrentDir.getPath())));
                 return true;
             }
         });
 
-        loadFiles(mCurrentDir);
+        loadFiles(mCurrentDir, true);
     }
 
     @SuppressLint("CheckResult")
-    private void loadFiles(final File file) {
-        Logger.debug( "WearFilesFragment loadFiles file: " + file.toString());
+    private void loadFiles(final File file, boolean scrollToTop) {
+        Logger.debug("WearFilesFragment loadFiles file: " + file.toString());
         wearFilesFrameLayout.setVisibility(View.GONE);
         progressBar.setVisibility(View.VISIBLE);
 
         Flowable.fromCallable(new Callable<List<AppInfo>>() {
-            @Override
-            public List<AppInfo> call() {
-                Logger.info( "WearFilesFragment loadFiles call");
+                    @Override
+                    public List<AppInfo> call() {
+                        Logger.info("WearFilesFragment loadFiles call");
 
-                List<AppInfo> appInfoList = getFilesList(file);
-                WearFilesFragment.this.fileInfoList = appInfoList;
+                        List<AppInfo> appInfoList = getFilesList(file);
+                        WearFilesFragment.this.fileInfoList = appInfoList;
 
-                Logger.debug( "WearFilesFragment loadFiles appInfoList.size: " + appInfoList.size());
-                return appInfoList;
-            }
-        }).subscribeOn(Schedulers.computation())
+                        Logger.debug("WearFilesFragment loadFiles appInfoList.size: " + appInfoList.size());
+                        return appInfoList;
+                    }
+                }).subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.single())
                 .subscribe(new Consumer<List<AppInfo>>() {
                     @Override
@@ -249,18 +250,19 @@ public class WearFilesFragment extends Fragment {
                                 progressBar.setVisibility(View.GONE);
                                 wearFilesFrameLayout.setVisibility(View.VISIBLE);
 
-                                listView.post(new Runnable() {
-                                    public void run() {
-                                        Logger.debug("WearFilesFragment loadFiles scrollToTop");
-                                        listView.smoothScrollToPosition(0);
-                                    }
-                                });
+                                if (scrollToTop)
+                                    listView.post(new Runnable() {
+                                        public void run() {
+                                            Logger.debug("WearFilesFragment loadFiles scrollToTop");
+                                            listView.smoothScrollToPosition(0);
+                                        }
+                                    });
 
                             }
                         });
                     }
                 }, throwable -> {
-                        Logger.error("WearFilesFragment: Flowable: subscribeOn: " + throwable.getMessage());
+                    Logger.error("WearFilesFragment: Flowable: subscribeOn: " + throwable.getMessage());
                 });
 
     }
@@ -274,19 +276,19 @@ public class WearFilesFragment extends Fragment {
     }
 
     private void changeDir(File file) {
-        Logger.debug( "WearFilesFragment changeDir file: " + file.toString());
+        Logger.debug("WearFilesFragment changeDir file: " + file.toString());
 
         mAdapter.clear();
         setPreviousDir(mCurrentDir);
         mCurrentDir = file;
-        loadFiles(mCurrentDir);
+        loadFiles(mCurrentDir, true);
 
     }
 
     private void openFile(File file) {
 
         Uri fileUri = Uri.fromFile(file);
-        Logger.debug( "WearFilesFragment openFile fileUri: " + fileUri.toString());
+        Logger.debug("WearFilesFragment openFile fileUri: " + fileUri.toString());
 
         String mimeType = getMimeType(fileUri);
 
@@ -309,7 +311,7 @@ public class WearFilesFragment extends Fragment {
                 i.setDataAndType(fileUri, mimeType);
                 getActivity().startActivity(i);
             } catch (ActivityNotFoundException e) {
-                showToast(String.format(getString(R.string.no_app_found)+" %s!", mimeType));
+                showToast(String.format(getString(R.string.no_app_found) + " %s!", mimeType));
             }
         } else {
             showToast("Unknown file type!");
@@ -355,14 +357,14 @@ public class WearFilesFragment extends Fragment {
         List<AppInfo> appInfoList = new ArrayList<>();
         AppInfo fileInfo;
 
-        Logger.debug( "WearFilesFragment getFilesList allFiles.size: " + allFiles.size());
+        Logger.debug("WearFilesFragment getFilesList allFiles.size: " + allFiles.size());
 
         if (!isRoot()) {
             fileInfo = new AppInfo(PARENT_DIR, getResources().getString(R.string.go_up), PARENT_DIR, "0", folderDrawable);
             appInfoList.add(fileInfo);
         }
 
-        if (allFiles.size() > 0 ) {
+        if (allFiles.size() > 0) {
             for (File f : allFiles) {
                 fileInfo = createFileInfo(f);
                 appInfoList.add(fileInfo);
@@ -377,7 +379,7 @@ public class WearFilesFragment extends Fragment {
     }
 
     private AppInfo createFileInfo(File file) {
-        Logger.debug( "WearFilesFragment createFileInfo file: " + file.toString());
+        Logger.debug("WearFilesFragment createFileInfo file: " + file.toString());
 
         final AppInfo appInfo = new AppInfo();
 
@@ -413,7 +415,7 @@ public class WearFilesFragment extends Fragment {
     }
 
     public List<File> getAllFiles(File f) {
-        Logger.debug( "WearFilesFragment getAllFiles f: " + f.toString());
+        Logger.debug("WearFilesFragment getAllFiles f: " + f.toString());
 
         File[] allFiles = f.listFiles();
         List<File> dirs = new ArrayList<>();
@@ -421,9 +423,9 @@ public class WearFilesFragment extends Fragment {
 
         for (File file : allFiles) {
             String fileName = file.getName();
-            Logger.debug( "WearFilesFragment getAllFiles file: " + fileName);
+            Logger.debug("WearFilesFragment getAllFiles file: " + fileName);
 
-            if  (!fileName.startsWith(".")) {
+            if (!fileName.startsWith(".")) {
                 if (file.isDirectory()) {
                     dirs.add(file);
                 } else {
@@ -439,19 +441,19 @@ public class WearFilesFragment extends Fragment {
             dirs.addAll(files);
         }
 
-        Logger.debug( "WearFilesFragment getAllFiles dirs.size: " + dirs.size());
+        Logger.debug("WearFilesFragment getAllFiles dirs.size: " + dirs.size());
         return dirs;
     }
 
     public String getMimeType(Uri uri) {
 
         final String fileUri = uri.toString();
-        Logger.debug( "WearFilesFragment getMimeType uri: " + fileUri);
+        Logger.debug("WearFilesFragment getMimeType uri: " + fileUri);
 
         String mimeType = null;
         String extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString());
 
-        Logger.debug( "WearFilesFragment getMimeType extension: " + extension);
+        Logger.debug("WearFilesFragment getMimeType extension: " + extension);
 
         if (MimeTypeMap.getSingleton().hasExtension(extension)) {
             mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension);
@@ -460,18 +462,18 @@ public class WearFilesFragment extends Fragment {
         if (mimeType == null && (fileUri.toLowerCase().endsWith(".jpg") || fileUri.toLowerCase().endsWith(".jpeg")))
             mimeType = JPG_MIME;
 
-        Logger.debug( "WearFilesFragment getMimeType mimeType: " + mimeType);
+        Logger.debug("WearFilesFragment getMimeType mimeType: " + mimeType);
 
         return mimeType;
     }
 
     public static long getFreeSpace(String path) {
-        Logger.debug( "WearFilesFragment getFreeSpace path: " + path);
+        Logger.debug("WearFilesFragment getFreeSpace path: " + path);
 
         File file = new File(path);
         long freeSpace = file.getFreeSpace();
         long usableSpace = file.getUsableSpace();
-        Logger.debug( "WearFilesFragment getFreeSpace freeSpace: " + String.valueOf(freeSpace)
+        Logger.debug("WearFilesFragment getFreeSpace freeSpace: " + String.valueOf(freeSpace)
                 + " \\ usableSpace: " + String.valueOf(usableSpace));
 
         StatFs stat = new StatFs(path);
@@ -481,7 +483,7 @@ public class WearFilesFragment extends Fragment {
     @SuppressLint("DefaultLocale")
     public static String formatBytes(long bytes) {
 
-        Logger.debug( "WearFilesFragment formatBytes bytes: " + bytes);
+        Logger.debug("WearFilesFragment formatBytes bytes: " + bytes);
 
         String retStr;
         float kb = 1024L;
@@ -491,8 +493,7 @@ public class WearFilesFragment extends Fragment {
         if (bytes > gb) {
             float gbs = bytes / gb;
             retStr = String.format("%.2f", gbs) + " GB";
-        }
-        else if (bytes > mb) {
+        } else if (bytes > mb) {
             float mbs = bytes / mb;
             retStr = String.format("%.2f", mbs) + " MB";
 
@@ -534,7 +535,7 @@ public class WearFilesFragment extends Fragment {
 
     }
 
-    private void openFileViewer(Uri fileUri, String mimeType){
+    private void openFileViewer(Uri fileUri, String mimeType) {
 
         Intent intent = new Intent(mContext, FileViewerWebViewActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
@@ -548,7 +549,7 @@ public class WearFilesFragment extends Fragment {
     }
 
     private void deleteFile(final File file) {
-        Logger.debug( "WearFilesFragment deleteFile file: " + file.toString());
+        Logger.debug("WearFilesFragment deleteFile file: " + file.toString());
 
         new AlertDialog.Builder(getActivity())
                 .setTitle(getResources().getString(R.string.delete))
@@ -557,25 +558,25 @@ public class WearFilesFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         try {
                             boolean result = true;
-                            if (file.isDirectory()){
+                            if (file.isDirectory()) {
                                 try {
                                     deleteDirectoryRecursionJava(file);
-                                }catch (IOException ex){
+                                } catch (IOException ex) {
                                     result = false;
                                 }
-                            }else{
+                            } else {
                                 result = file.delete();
                             }
                             if (result) {
                                 if (!(fileInfoList == null))
                                     fileInfoList.clear();
-                                loadFiles(mCurrentDir);
-                                showToast(getString(R.string.deleted)+"!");
+                                loadFiles(mCurrentDir, false);
+                                showToast(getString(R.string.deleted) + "!");
                             } else
-                                showToast(getString(R.string.error_deleting)+"!");
+                                showToast(getString(R.string.error_deleting) + "!");
                         } catch (Exception ex) {
-                            Logger.error(ex,"WearFilesFragment deleteFile Exception" + ex.getMessage());
-                            showToast(getString(R.string.error_deleting)+"!");
+                            Logger.error(ex, "WearFilesFragment deleteFile Exception" + ex.getMessage());
+                            showToast(getString(R.string.error_deleting) + "!");
                         }
                     }
                 })

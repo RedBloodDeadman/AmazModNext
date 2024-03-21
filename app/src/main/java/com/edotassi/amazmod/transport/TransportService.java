@@ -1,5 +1,7 @@
 package com.edotassi.amazmod.transport;
 
+import static android.service.notification.NotificationListenerService.requestRebind;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -12,6 +14,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.ArrayMap;
 import androidx.preference.PreferenceManager;
@@ -19,8 +22,13 @@ import androidx.preference.PreferenceManager;
 import com.edotassi.amazmod.AmazModApplication;
 import com.edotassi.amazmod.event.BatteryStatus;
 import com.edotassi.amazmod.event.Directory;
+import com.edotassi.amazmod.event.FtpOnStateChanged;
 import com.edotassi.amazmod.event.NextMusic;
+import com.edotassi.amazmod.event.NotificationAction;
+import com.edotassi.amazmod.event.NotificationIntent;
 import com.edotassi.amazmod.event.NotificationReply;
+import com.edotassi.amazmod.event.OnApEnableResult;
+import com.edotassi.amazmod.event.OnApStateChanged;
 import com.edotassi.amazmod.event.OtherData;
 import com.edotassi.amazmod.event.RequestFileUpload;
 import com.edotassi.amazmod.event.ResultDeleteFile;
@@ -28,6 +36,7 @@ import com.edotassi.amazmod.event.ResultDownloadFileChunk;
 import com.edotassi.amazmod.event.ResultShellCommand;
 import com.edotassi.amazmod.event.ResultWidgets;
 import com.edotassi.amazmod.event.SilenceApplication;
+import com.edotassi.amazmod.event.SyncBattery;
 import com.edotassi.amazmod.event.TakePicture;
 import com.edotassi.amazmod.event.ToggleMusic;
 import com.edotassi.amazmod.event.WatchStatus;
@@ -56,6 +65,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -68,17 +79,16 @@ import amazmod.com.transport.Constants;
 import amazmod.com.transport.Transport;
 import amazmod.com.transport.Transportable;
 
-import static android.service.notification.NotificationListenerService.requestRebind;
-
 public class TransportService extends Service implements Transporter.DataListener {
 
-    private static Transporter  transporterAmazMod,         // Used with generic data (in/out)
-                                transporterNotifications,   // Used to send Custom UI notifications to watch (out)
-                                transporterHuami,           // Used with Standard UI notifications (out)
-                                transporterCompanion,       // Used with watch/companion data (in/out)
-                                transporterSync,            // Used with sync (in/out)
-                                transporterHealth,          // Used to pull data (in/out)
-                                transporter;                // Used with AmazfitInternetCompanion (in/out)
+    private static Transporter transporterAmazMod,         // Used with generic data (in/out)
+            transporterNotifications,   // Used to send Custom UI notifications to watch (out)
+            transporterHuami,           // Used with Standard UI notifications (out)
+            transporterCompanion,       // Used with watch/companion data (in/out)
+            transporterSync,            // Used with sync (in/out)
+            transporterHealth,          // Used to pull data (in/out)
+            transporter,                // Used with AmazfitInternetCompanion (in/out)
+            transporterFtp;                // Used for FTP
 
     private PersistentNotification persistentNotification;
     private LocalBinder localBinder = new LocalBinder();
@@ -90,6 +100,7 @@ public class TransportService extends Service implements Transporter.DataListene
     public static final char TRANSPORT_COMPANION = 'C';
     public static final char TRANSPORT_HEALTH = 'D';
     public static final char TRANSPORTER_SYNC = 'S';
+    public static final char TRANSPORT_FTP = 'F';
 
     public static String model;
 
@@ -103,6 +114,8 @@ public class TransportService extends Service implements Transporter.DataListene
         put(Transport.WATCH_STATUS, WatchStatus.class);
         put(Transport.BATTERY_STATUS, BatteryStatus.class);
         put(Transport.REPLY, NotificationReply.class);
+        put(Transport.ACTION, NotificationAction.class);
+        put(Transport.INTENT, NotificationIntent.class);
         put(Transport.NEXT_MUSIC, NextMusic.class);
         put(Transport.TOGGLE_MUSIC, ToggleMusic.class);
         put(Transport.DIRECTORY, Directory.class);
@@ -113,12 +126,17 @@ public class TransportService extends Service implements Transporter.DataListene
         put(Transport.SILENCE, SilenceApplication.class);
         put(Transport.WIDGETS_DATA, ResultWidgets.class);
         put(Transport.TAKE_PICTURE, TakePicture.class);
+        put(Transport.FTP_ON_STATE_CHANGED, FtpOnStateChanged.class);
+        put(Transport.ON_AP_ENABLE_RESULT, OnApEnableResult.class);
+        put(Transport.ON_AP_STATE_CHANGED, OnApStateChanged.class);
+        put(Transport.OFFICIAL_SYNC_BATTERY, SyncBattery.class);
     }};
 
-    private static ArrayMap<String, Object> pendingResults = new ArrayMap<>();
+    private static HashMap<String, Object> pendingResults = new HashMap<>();
 
     public interface DataTransportResultCallback {
         void onSuccess(DataTransportResult dataTransportResult, String uuid);
+
         void onFailure(String error, String uuid);
     }
 
@@ -171,7 +189,13 @@ public class TransportService extends Service implements Transporter.DataListene
             AmazModApplication.setWatchConnected(false);
         }
          */
-
+        //Wifi FTP
+        transporterFtp = TransporterClassic.get(this, "com.huami.wififtp");
+        if (!transporterFtp.isTransportServiceConnected()) {
+            transporterFtp.addDataListener(this);
+            transporterFtp.connectTransportService();
+            AmazModApplication.setWatchConnected(false);
+        }
         // Amazfit Internet Companion
         if (PreferenceManager.getDefaultSharedPreferences(this).getBoolean(Constants.PREF_ENABLE_INTERNET_COMPANION, false))
             startInternetCompanion(getApplicationContext());
@@ -193,11 +217,6 @@ public class TransportService extends Service implements Transporter.DataListene
     public void onDestroy() {
         EventBus.getDefault().unregister(transportListener);
 
-        // Remove data listeners
-        transporterAmazMod.removeDataListener(this);
-        //transporterCompanion.removeDataListener(this);
-        //transporterHealth.removeDataListener(this);
-
         disconnectTransports();
 
         stopForeground(true);
@@ -215,7 +234,7 @@ public class TransportService extends Service implements Transporter.DataListene
     public void onDataReceived(TransportDataItem transportDataItem) {
         //Logger.trace(transportDataItem.toString());
         String action = transportDataItem.getAction();
-        Logger.debug("Watch replied with action: {} (full reply: {})", action, transportDataItem.toString());
+        Logger.debug("Watch replied with action: {}", action);
 
         // Get class type of data
         Object event = dataToClass(transportDataItem);
@@ -226,13 +245,13 @@ public class TransportService extends Service implements Transporter.DataListene
             if (taskCompletionSourcePendingResult != null) {
                 pendingResults.remove(action);
                 //Logger.trace("Executing & removing pending completion task with action {}", action);
-                taskCompletionSourcePendingResult.setResult(event);
+                taskCompletionSourcePendingResult.trySetResult(event);
             } else {
                 // No pending action, proceed...
-                if( event != null ) {
-                    Logger.trace("Sending EventBus event: "+event);
+                if (event != null) {
+                    Logger.trace("Sending EventBus event: " + event);
                     EventBus.getDefault().post(event);
-                }else{
+                } else {
                     Logger.trace("EventBus event is null");
                 }
             }
@@ -266,6 +285,7 @@ public class TransportService extends Service implements Transporter.DataListene
 
         if (transporterAmazMod.isTransportServiceConnected()) {
             Logger.info("disconnectTransports disconnecting transporterAmazMod…");
+            transporterAmazMod.removeDataListener(this);
             transporterAmazMod.disconnectTransportService();
             transporterAmazMod = null;
         }
@@ -294,10 +314,17 @@ public class TransportService extends Service implements Transporter.DataListene
             transporterHealth = null;
         }
 
+        if (transporterFtp.isTransportServiceConnected()) {
+            Logger.info("disconnectTransports disconnecting transporterFtp…");
+            transporterFtp.removeDataListener(this);
+            transporterFtp.disconnectTransportService();
+            transporterFtp = null;
+        }
+
         sleepListener.unregister();
     }
 
-    public static void connectTransporterAmazMod(){
+    public static void connectTransporterAmazMod() {
         if (transporterAmazMod.isTransportServiceConnected()) {
             Logger.info("TransportService onCreate transporterAmazMod already connected");
         } else {
@@ -307,7 +334,7 @@ public class TransportService extends Service implements Transporter.DataListene
         }
     }
 
-    public static void connectTransporterNotifications(){
+    public static void connectTransporterNotifications() {
         if (!transporterNotifications.isTransportServiceConnected()) {
             Logger.warn("TransportService transporterNotifications not connected, connecting...");
             transporterNotifications.connectTransportService();
@@ -334,36 +361,49 @@ public class TransportService extends Service implements Transporter.DataListene
         }
     }
 
-    public static boolean isTransporterAmazModAvailable(){
+    public void connectTransporterFtp() {
+        if (!transporterFtp.isTransportServiceConnected()) {
+            Logger.warn("onStartJob transporterFtp not connected, connecting...");
+            transporterFtp.connectTransportService();
+        } else {
+            Logger.info("TransportService transporterFtp already connected");
+        }
+    }
+
+    public static boolean isTransporterAmazModAvailable() {
         return transporterAmazMod.isAvailable();
     }
 
-    public static boolean isTransporterNotificationsAvailable(){
+    public static boolean isTransporterNotificationsAvailable() {
         return transporterNotifications.isAvailable();
     }
 
-    public static boolean isTransporterHuamiAvailable(){
+    public static boolean isTransporterHuamiAvailable() {
         return transporterHuami.isAvailable();
     }
 
-    public static boolean isTransporterHuamiCompanion(){
+    public static boolean isTransporterHuamiCompanion() {
         return transporterCompanion.isAvailable();
     }
 
-    public static boolean isTransporterAmazModConnected(){
+    public static boolean isTransporterAmazModConnected() {
         return transporterAmazMod.isTransportServiceConnected();
     }
 
-    public static boolean isTransporterNotificationsConnected(){
+    public static boolean isTransporterNotificationsConnected() {
         return transporterNotifications.isTransportServiceConnected();
     }
 
-    public static boolean isTransporterHuamiConnected(){
+    public static boolean isTransporterHuamiConnected() {
         return transporterHuami.isTransportServiceConnected();
     }
 
-    public static boolean isTransporterCompanionConnected(){
+    public static boolean isTransporterCompanionConnected() {
         return transporterCompanion.isTransportServiceConnected();
+    }
+
+    public static boolean isTransporterFtpConnected() {
+        return transporterFtp.isTransportServiceConnected();
     }
 
     private void startPersistentNotification() {
@@ -397,24 +437,37 @@ public class TransportService extends Service implements Transporter.DataListene
 
 
     public <T> Task<T> sendWithResult(final String action, final String actionResult, final Transportable transportable) {
-        return sendWithResult(action, actionResult, transportable, TRANSPORT_AMAZMOD);
+        return sendWithResult(action, new String[]{actionResult}, transportable, TRANSPORT_AMAZMOD);
     }
 
-    public <T> Task<T> sendWithResult(final String action, final String actionResult, final Transportable transportable, char transporter) {
+    public <T> Task<T> sendWithResult(final String action, final String[] actionResults, final Transportable transportable, char transporter) {
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        return sendWithResult(action, actionResults, dataBundle, transporter);
+    }
+
+    public <T> Task<T> sendWithResult(final String action, final String[] actionResults, final DataBundle dataBundle, char transporter) {
         final TaskCompletionSource<T> taskCompletionSource = new TaskCompletionSource<>();
-        //Logger.trace("sendWithResult action: {}", action);
+        Logger.trace("sendWithResult action: {}", action);
 
         Tasks.call(executor, new Callable<Object>() {
             @Override
             public Object call() throws Exception {
-                Logger.trace("Sending data with action {} with result action: {}", action, actionResult);
-                pendingResults.put(actionResult, taskCompletionSource);
+                Logger.trace("Sending data with action {} with result action: {}", action, Arrays.toString(actionResults));
+                for (String actionResult: actionResults) {
+                    if (!pendingResults.containsKey(actionResult)) {
+                        pendingResults.put(actionResult, taskCompletionSource);
+                    }else{
+                        pendingResults.replace(actionResult, taskCompletionSource);
+                    }
+                }
 
-                send(transporter, action, transportable, null);
+                send(transporter, action, dataBundle, null);
 
                 try {
                     Logger.trace("Data with action {} were send. Waiting for reply...", action);
-                    Tasks.await(taskCompletionSource.getTask(), 30000, TimeUnit.MILLISECONDS);
+                    Tasks.await(taskCompletionSource.getTask(), 60000, TimeUnit.MILLISECONDS);
                 } catch (TimeoutException timeoutException) {
                     taskCompletionSource.setException(timeoutException);
                     Logger.error(timeoutException, timeoutException.getMessage());
@@ -440,26 +493,48 @@ public class TransportService extends Service implements Transporter.DataListene
     }
 
     public void send(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
-        send(TRANSPORT_AMAZMOD, action, transportable, waiter);
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_AMAZMOD, action, dataBundle, waiter);
     }
 
     public void sendWithAmazMod(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
-        send(TRANSPORT_AMAZMOD, action, transportable, waiter);
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_AMAZMOD, action, dataBundle, waiter);
     }
 
     public void sendWithNotifications(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
-        send(TRANSPORT_NOTIFICATIONS, action, transportable, waiter);
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_NOTIFICATIONS, action, dataBundle, waiter);
     }
 
     public void sendWithHuami(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
-        send(TRANSPORT_HUAMI, action, transportable, waiter);
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_HUAMI, action, dataBundle, waiter);
     }
 
     public void sendWithCompanion(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
-        send(TRANSPORT_COMPANION, action, transportable, waiter);
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_COMPANION, action, dataBundle, waiter);
     }
 
-    public void send(char mode, final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
+    public void sendWithFtp(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_FTP, action, dataBundle, waiter);
+    }
+
+    public void send(char mode, final String action, DataBundle dataBundle, final TaskCompletionSource<Void> waiter) {
         // Get appropriate transporter based on mode
         Transporter transporter = getTransporter(mode, action);
 
@@ -478,7 +553,7 @@ public class TransportService extends Service implements Transporter.DataListene
             return;
         }
 
-        if(!BluetoothAdapter.getDefaultAdapter().isEnabled()){
+        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
             if (AmazModApplication.isWatchConnected() || (EventBus.getDefault().getStickyEvent(IsWatchConnectedLocal.class) == null)) {
                 AmazModApplication.setWatchConnected(false);
                 EventBus.getDefault().removeAllStickyEvents();
@@ -488,10 +563,6 @@ public class TransportService extends Service implements Transporter.DataListene
             Logger.warn("Bluetooth is not enabled");
             return;
         }
-
-        DataBundle dataBundle = new DataBundle();
-        if (transportable != null)
-            transportable.toDataBundle(dataBundle);
 
         Logger.debug("Send action: {}", action);
         transporter.send(action, dataBundle, new Transporter.DataSendResultCallback() {
@@ -527,7 +598,7 @@ public class TransportService extends Service implements Transporter.DataListene
                             persistentNotification.updatePersistentNotification(true);
                         }
 
-                        //Logger.debug("Action {} was sent successfully.", action);
+                        Logger.debug("Action {} was sent successfully.", action);
                         break;
                     }
                     default:
@@ -569,18 +640,27 @@ public class TransportService extends Service implements Transporter.DataListene
         getDataTransportResult(TRANSPORT_COMPANION, action, null, dataBundle, callback);
     }
 
+    public static void sendWithTransporterFtp(String action, DataBundle dataBundle, DataTransportResultCallback callback) {
+        getDataTransportResult(TRANSPORT_FTP, action, null, dataBundle, callback);
+    }
+
+    public static void sendWithTransporterFtp(String action, DataTransportResultCallback callback) {
+        getDataTransportResult(TRANSPORT_FTP, action, null, null, callback);
+    }
+
     public static void getDataTransportResult(char mode, String action, final String uuid, DataBundle dataBundle, final DataTransportResultCallback callback) {
 
         // Get appropriate transporter based on mode
         Transporter t = getTransporter(mode, action);
 
-        if(t == null){
+        if (t == null) {
             if (callback != null)
                 callback.onFailure("Transporter mode not found", uuid);
             return;
         }
 
         Logger.debug("uuid: {}", uuid);
+        Logger.debug("dataBundle: {}", dataBundle);
         t.send(action, dataBundle, new Transporter.DataSendResultCallback() {
             @Override
             public void onResultBack(DataTransportResult dataTransportResult) {
@@ -612,6 +692,9 @@ public class TransportService extends Service implements Transporter.DataListene
             case TRANSPORT_HEALTH:
                 Logger.debug("Sending using transporter Health with action: {}", action);
                 return transporterHealth;
+            case TRANSPORT_FTP:
+                Logger.debug("Sending using transporter FTP with action: {}", action);
+                return transporterFtp;
             default:
                 Logger.error("Transporter mode not found or null");
         }
@@ -621,7 +704,7 @@ public class TransportService extends Service implements Transporter.DataListene
     private Object dataToClass(TransportDataItem transportDataItem) {
         String action = transportDataItem.getAction();
 
-        //Logger.debug("action: " + action);
+        Logger.debug("action: " + action);
 
         // Get appropriate class to handle action
         Class messageClass = messages.get(action);

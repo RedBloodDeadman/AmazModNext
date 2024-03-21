@@ -49,7 +49,7 @@ public class NotificationStore {
 
     public static void addRemovedNotification(String uuid, DataBundle dataBundle) {
         removedNotifications.put(uuid, dataBundle);
-        UUIDmap.put(uuid, ((StatusBarNotificationData) dataBundle.getParcelable("data")).key);
+        UUIDmap.put(uuid, dataBundle.getString("key"));
     }
 
     public static void removeRemovedNotification(String uuid) {

@@ -352,4 +352,29 @@ public class FilesUtil {
         return string.substring(0, 1).toUpperCase() + string.substring(1);
     }
 
+    public static String formatBytes(long bytes) {
+
+        Logger.debug( "WearFilesFragment formatBytes bytes: " + bytes);
+
+        String retStr;
+        float kb = 1024L;
+        float mb = kb * kb;
+        float gb = kb * mb;
+
+        if (bytes > gb) {
+            float gbs = bytes / gb;
+            retStr = String.format("%.2f", gbs) + " GB";
+        }
+        else if (bytes > mb) {
+            float mbs = bytes / mb;
+            retStr = String.format("%.2f", mbs) + " MB";
+
+        } else if (bytes > kb) {
+            float kbs = bytes / kb;
+            retStr = String.format("%.2f", kbs) + " kB";
+        } else
+            retStr = (Long.valueOf(bytes)).toString() + " B";
+
+        return retStr;
+    }
 }

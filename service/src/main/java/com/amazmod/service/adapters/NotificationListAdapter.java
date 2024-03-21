@@ -2,7 +2,6 @@ package com.amazmod.service.adapters;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.support.wearable.view.WearableListView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,8 +9,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.core.graphics.drawable.RoundedBitmapDrawable;
-import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 import androidx.annotation.NonNull;
 import androidx.emoji.widget.EmojiTextView;
 
@@ -23,8 +20,10 @@ import org.tinylog.Logger;
 
 import java.util.List;
 
+import amazmod.com.transport.util.ImageUtils;
+
 public class NotificationListAdapter extends WearableListView.Adapter {
-    private final List<NotificationInfo> items;
+    private List<NotificationInfo> items;
     private final LayoutInflater mInflater;
     private Context mContext;
     private FragmentUtil util;
@@ -36,6 +35,10 @@ public class NotificationListAdapter extends WearableListView.Adapter {
 
         // Load FragmentUtil because for font change function is needed
         util = new FragmentUtil(mContext);
+    }
+
+    public void setItems(List<NotificationInfo> items) {
+        this.items = items;
     }
 
     @Override
@@ -82,20 +85,14 @@ public class NotificationListAdapter extends WearableListView.Adapter {
         }
     }
 
-
     private void populateNotificationIcon(ImageView iconView, ImageView iconAppView, NotificationInfo item) {
         try {
             byte[] largeIconData = item.getLargeIconData();
             if ((largeIconData != null) && (largeIconData.length > 0)) {
-                Bitmap bitmap = BitmapFactory.decodeByteArray(largeIconData, 0, largeIconData.length);
-
-                RoundedBitmapDrawable roundedBitmapDrawable = RoundedBitmapDrawableFactory.create(mContext.getResources(), bitmap);
-
-                roundedBitmapDrawable.setCircular(true);
-                roundedBitmapDrawable.setAntiAlias(true);
-
-                iconView.setImageDrawable(roundedBitmapDrawable);
+                Bitmap bitmap = ImageUtils.bytes2Bitmap(largeIconData);
+                iconView.setImageBitmap(bitmap);
                 iconAppView.setImageDrawable(item.getIcon());
+                iconAppView.setVisibility(View.VISIBLE);
             } else {
                 iconView.setImageDrawable(item.getIcon());
                 iconAppView.setVisibility(View.GONE);

@@ -10,10 +10,10 @@ android {
     compileSdkVersion 29
     defaultConfig {
         applicationId 'com.edotassi.amazmod'
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 29
-        versionCode 232
-        versionName "1.2.4"
+        versionCode 233
+        versionName "1.2.5-dev"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         setProperty("archivesBaseName", "AmazMod-$project.name-$versionCode")
     }

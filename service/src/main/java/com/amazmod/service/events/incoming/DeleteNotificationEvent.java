@@ -13,4 +13,11 @@ public class DeleteNotificationEvent {
     public DataBundle getDataBundle() {
         return dataBundle;
     }
+
+    @Override
+    public String toString() {
+        return "DeleteNotificationEvent{" +
+                "dataBundle=" + dataBundle +
+                '}';
+    }
 }

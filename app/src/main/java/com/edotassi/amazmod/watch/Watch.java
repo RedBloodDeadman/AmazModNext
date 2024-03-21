@@ -25,9 +25,13 @@ import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.Task;
 import com.google.android.gms.tasks.TaskCompletionSource;
 import com.google.android.gms.tasks.Tasks;
+import com.huami.watch.transport.DataBundle;
+import com.pixplicity.easyprefs.library.Prefs;
 
 import java.io.File;
 import java.io.RandomAccessFile;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
@@ -122,6 +126,20 @@ public class Watch {
                                    final byte mode,
                                    final OperationProgress operationProgress,
                                    final CancellationToken cancellationToken) {
+        String transferMethod = Prefs.getString(Constants.PREF_DATA_TRANSFER_METHOD, "1");
+        if (Constants.PREF_DATA_TRANSFER_METHOD_BLUETOOTH.equals(transferMethod)){
+            return downloadFileViaBt(activity, path, name, size, mode, operationProgress, cancellationToken);
+        }else if (Constants.PREF_DATA_TRANSFER_METHOD_WIFI.equals(transferMethod)){
+            return downloadFileViaFTP(activity, path, name, size, mode, operationProgress, cancellationToken);
+        }
+        return null;
+    }
+
+    public Task<Void> downloadFileViaBt(Activity activity, final String path, final String name,
+                                   final long size,
+                                   final byte mode,
+                                   final OperationProgress operationProgress,
+                                   final CancellationToken cancellationToken) {
         final TaskCompletionSource taskCompletionSource = new TaskCompletionSource<Void>();
 
         PermissionsHelper
@@ -208,7 +226,52 @@ public class Watch {
         return taskCompletionSource.getTask();
     }
 
+    public Task<Void> downloadFileViaFTP(Activity activity, final String path, final String name,
+                                         final long size,
+                                         final byte mode,
+                                         final OperationProgress operationProgress,
+                                         final CancellationToken cancellationToken) {
+        final TaskCompletionSource taskCompletionSource = new TaskCompletionSource<Void>();
+
+        PermissionsHelper
+                .checkPermission(activity, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .continueWith(new Continuation() {
+                    @Override
+                    public Object then(@NonNull Task task) {
+                        if (!task.isSuccessful()) {
+                            if (task.getException() != null)
+                                taskCompletionSource.setException(task.getException());
+                            return null;
+                        }
+
+                        Tasks.call(threadPoolExecutor, new Callable<Object>() {
+                            @Override
+                            public Object call() throws Exception {
+                                FtpWifiDownloadHelper ftpWifiDownloadHelper = new FtpWifiDownloadHelper();
+                                long startedAt = System.currentTimeMillis();
+                                ftpWifiDownloadHelper.download(name, path, size, mode, context, taskCompletionSource, operationProgress, cancellationToken, startedAt);
+                                return null;
+                            }
+                        });
+
+                        return null;
+                    }
+                });
+
+        return taskCompletionSource.getTask();
+    }
+
     public Task<Void> uploadFile(final File file, final String destPath, final OperationProgress operationProgress, final CancellationToken cancellationToken) {
+        String transferMethod = Prefs.getString(Constants.PREF_DATA_TRANSFER_METHOD, "1");
+        if (Constants.PREF_DATA_TRANSFER_METHOD_BLUETOOTH.equals(transferMethod)){
+            return uploadFileViaBt(file, destPath, operationProgress, cancellationToken);
+        }else if (Constants.PREF_DATA_TRANSFER_METHOD_WIFI.equals(transferMethod)){
+            return uploadFileViaFTP(file, destPath, operationProgress, cancellationToken);
+        }
+        return null;
+    }
+
+    public Task<Void> uploadFileViaBt(final File file, final String destPath, final OperationProgress operationProgress, final CancellationToken cancellationToken) {
         final TaskCompletionSource taskCompletionSource = new TaskCompletionSource<Void>();
 
         Tasks.call(threadPoolExecutor, new Callable<Object>() {
@@ -254,6 +317,25 @@ public class Watch {
             }
         });
 
+        return taskCompletionSource.getTask();
+    }
+
+    public Task<Void> uploadFileViaFTP(final File file, final String destPath, final OperationProgress operationProgress, final CancellationToken cancellationToken) {
+        String ftpDestPath = destPath.substring(0, destPath.lastIndexOf("/"));
+        return uploadFileViaFTP(Collections.singletonList(file), ftpDestPath, operationProgress, cancellationToken);
+    }
+
+    public Task<Void> uploadFileViaFTP(final List<File> files, final String ftpDestPath, final OperationProgress operationProgress, final CancellationToken cancellationToken) {
+        final TaskCompletionSource taskCompletionSource = new TaskCompletionSource<Void>();
+        Tasks.call(threadPoolExecutor, new Callable<Object>() {
+            @Override
+            public Object call() throws Exception {
+                FtpWifiUploadHelper ftpWifiUploadHelper = new FtpWifiUploadHelper();
+                long startedAt = System.currentTimeMillis();
+                ftpWifiUploadHelper.upload(files, ftpDestPath, context, taskCompletionSource, operationProgress, cancellationToken, startedAt);
+                return null;
+            }
+        });
         return taskCompletionSource.getTask();
     }
 
@@ -395,23 +477,48 @@ public class Watch {
     }
 
     public Task<OtherData> sendSimpleData(String action, Transportable data) {
-        return sendSimpleData(action, action, data, TransportService.TRANSPORT_AMAZMOD);
+        return sendSimpleData(action, new String[]{action}, data, TransportService.TRANSPORT_AMAZMOD);
     }
 
     // Send data with custom transporter
     public Task<OtherData> sendSimpleData(String action, char transporter) {
-        return sendSimpleData(action, action, null, transporter);
+        return sendSimpleData(action, new String[]{action}, (Transportable) null, transporter);
+    }
+
+    public Task<OtherData> sendSimpleData(String action, char transporter, DataBundle data) {
+        return sendSimpleData(action, new String[]{action}, data, transporter);
+    }
+
+    public Task<OtherData> sendSimpleData(String action, String replyAction, char transporter, DataBundle data) {
+        return sendSimpleData(action, new String[]{replyAction}, data, transporter);
+    }
+
+    public Task<OtherData> sendSimpleData(String action, String[] replyActions, char transporter, DataBundle data) {
+        return sendSimpleData(action, replyActions, data, transporter);
     }
 
     public Task<OtherData> sendSimpleData(String action, String replyAction, char transporter) {
-        return sendSimpleData(action, replyAction, null, transporter);
+        return sendSimpleData(action, new String[]{replyAction}, (Transportable) null, transporter);
     }
 
-    public Task<OtherData> sendSimpleData(String action, String replyAction, Transportable data, char transporter) {
+    public Task<OtherData> sendSimpleData(String action, String[] replyActions, char transporter) {
+        return sendSimpleData(action, replyActions, (DataBundle) null, transporter);
+    }
+
+    public Task<OtherData> sendSimpleData(String action, String[] replyActions, Transportable data, char transporter) {
         return getServiceInstance().continueWithTask(new Continuation<TransportService, Task<OtherData>>() {
             @Override
             public Task<OtherData> then(@NonNull Task<TransportService> task) {
-                return Objects.requireNonNull(task.getResult()).sendWithResult(action, replyAction, data, transporter);
+                return Objects.requireNonNull(task.getResult()).sendWithResult(action, replyActions, data, transporter);
+            }
+        });
+    }
+
+    public Task<OtherData> sendSimpleData(String action, String[] replyActions, DataBundle data, char transporter) {
+        return getServiceInstance().continueWithTask(new Continuation<TransportService, Task<OtherData>>() {
+            @Override
+            public Task<OtherData> then(@NonNull Task<TransportService> task) {
+                return Objects.requireNonNull(task.getResult()).sendWithResult(action, replyActions, data, transporter);
             }
         });
     }

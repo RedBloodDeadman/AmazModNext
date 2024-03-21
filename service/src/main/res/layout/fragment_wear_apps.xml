@@ -161,11 +161,11 @@
 
         <TextView
             android:id="@+id/wear_apps_header"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:gravity="bottom"
+            android:gravity="center"
             android:textColor="@color/light_grey"
             android:textSize="20sp"
             tools:text="@string/user_apps" />

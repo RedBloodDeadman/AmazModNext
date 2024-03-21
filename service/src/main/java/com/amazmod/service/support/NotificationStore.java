@@ -10,6 +10,7 @@ import com.huami.watch.notification.data.NotificationKeyData;
 import org.greenrobot.eventbus.EventBus;
 import org.tinylog.Logger;
 
+import java.util.HashMap;
 import java.util.Set;
 
 import amazmod.com.transport.data.NotificationData;
@@ -32,21 +33,20 @@ public class NotificationStore {
         return customNotifications.size();
     }
 
-    public static void addCustomNotification(String key, NotificationData notificationData) {
+    public static void addCustomNotification(String key, NotificationData notificationData, Context context) {
         customNotifications.put(key, notificationData);
         keyMap.put(key, notificationData.getKey());
+        DeviceUtil.notificationCounter(context, 1, true);
     }
 
     public static void removeCustomNotification(String key, Context context) {
         NotificationData notificationData = NotificationStore.getCustomNotification(key);
-        // Updates the notification counter only if del action is not send (NotificationData is null)
-        if (notificationData == null)
-            DeviceUtil.notificationCounter(context, -1,"NotificationWearActivity notification is null (del action will not be send)");
-        else{
+        if (notificationData != null){
             // Remove custom notification
             sendRequestDeleteNotification(key, notificationData);
             customNotifications.remove(key);
             keyMap.remove(key);
+            DeviceUtil.notificationCounter(context, -1, true);
         }
     }
 
@@ -58,12 +58,12 @@ public class NotificationStore {
     }
     */
 
-    public static String getKey(String key) {
+    public static Integer getSbnId(String key) {
         NotificationData notificationData = customNotifications.get(key);
         if (notificationData == null)
             return null;
         else
-            return notificationData.getKey();
+            return notificationData.getId();
     }
 
     public static Boolean getHideReplies(String key) {
@@ -106,7 +106,7 @@ public class NotificationStore {
             return notificationData.getTime();
     }
 
-    public static int[] getIcon(String key) {
+    public static byte[] getIcon(String key) {
         NotificationData notificationData = customNotifications.get(key);
         if (notificationData == null)
             return null;
@@ -152,7 +152,7 @@ public class NotificationStore {
         if (notificationData == null)
             return;
 
-        String pkg = key.split("\\|")[1];
+        String pkg = notificationData.getPackageName();
         // Logger.debug("NotificationStore sendRequestDeleteNotification pkg: {} ", pkg);
 
         // NotificationKeyData from(String pkg, int id, String tag, String key, String targetPkg)

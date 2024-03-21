@@ -95,40 +95,21 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1" />
 
-
-            <RelativeLayout
-                android:layout_width="56dp"
+            <android.support.wearable.view.WearableRecyclerView
+                android:id="@+id/launcher_listview"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_gravity="center_horizontal"
+                android:dividerHeight="0dp"
                 android:gravity="center_horizontal"
-                android:orientation="vertical">
-
-                <android.support.wearable.view.WearableListView
-                    android:id="@+id/launcher_listview"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginLeft="8dp"
-                    android:dividerHeight="0dp"
-                    android:gravity="center_horizontal"
-                    android:longClickable="true"
-                    android:scrollbars="none">
-
-                </android.support.wearable.view.WearableListView>
-
-                <TextView
-                    android:id="@+id/launcher_header"
-                    android:layout_width="wrap_content"
-                    android:layout_height="60dp"
-                    android:layout_alignParentTop="true"
-                    android:layout_centerHorizontal="true"
-                    android:gravity="bottom"
-                    android:textColor="@color/light_grey"
-                    android:textSize="16sp"
-                    tools:text="@string/apps" />
-
-            </RelativeLayout>
+                android:longClickable="true"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:clipToPadding="false"
+                tools:listitem="@layout/row_app_launcher"
+                android:scrollbars="none" />
 
             <View
                 android:layout_width="0dip"
@@ -148,7 +129,7 @@
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:gravity="center_horizontal"
+                android:gravity="center"
                 android:layout_marginStart="8dp"
                 android:orientation="vertical">
 
@@ -157,7 +138,6 @@
                     android:layout_width="@dimen/circled_image_view_diameter"
                     android:layout_height="@dimen/circled_image_view_diameter"
                     android:layout_gravity="center_horizontal"
-                    android:layout_marginTop="12dp"
                     android:background="@color/transparent"
                     app:circle_border_color="@color/light_grey"
                     app:circle_border_width="2dp"
@@ -216,8 +196,7 @@
                 android:layout_height="match_parent"
                 android:layout_marginEnd="8dp"
                 android:layout_marginStart="8dp"
-                android:layout_marginTop="70dp"
-                android:gravity="start"
+                android:gravity="center"
                 android:orientation="vertical">
 
                 <TextView
@@ -244,15 +223,6 @@
                     app:circle_border_width="2dp"
                     app:circle_color="@android:color/transparent"
                     app:circle_radius="@dimen/big_circle_radius_launcher" />
-
-                <View
-                    android:id="@+id/launcher_appmenu"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
 
             </LinearLayout>
         </LinearLayout>

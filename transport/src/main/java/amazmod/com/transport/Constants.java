@@ -3,15 +3,17 @@ package amazmod.com.transport;
 public class Constants {
 
     public static final String TAG = "AmazMod";
-    public static final String SERVICE_UPDATE_URL = "https://raw.githubusercontent.com/edotassi/AmazMod/master/service-releases/version.json";
-    public static final String SERVICE_UPDATE_FILE_URL = "https://raw.githubusercontent.com/edotassi/AmazMod/master/service-releases/AmazMod-service-%d.apk";
-    public static final String SERVICE_UPDATE_SCRIPT_URL = "https://raw.githubusercontent.com/edotassi/AmazMod/dev/app/update_service_apk.sh";
+    public static final String SERVICE_UPDATE_URL = "https://raw.githubusercontent.com/RedBloodDeadman/AmazMod/master/service-releases/version.json";
+    public static final String SERVICE_UPDATE_FILE_URL = "https://raw.githubusercontent.com/RedBloodDeadman/AmazMod/master/service-releases/AmazMod-service-%d.apk";
+    public static final String SERVICE_UPDATE_SCRIPT_URL = "https://raw.githubusercontent.com/RedBloodDeadman/AmazMod/dev/app/update_service_apk.sh";
     public static final int CHUNK_SIZE = 4096 + 2048 + 2048;
     public static final String INITIAL_PATH = "/sdcard";
     public static final String DOWNLOAD_DIRECTORY = "AmazMod";
     public static final String SCREENSHOT_DIRECTORY = "AmazMod/Screenshots";
+    public static final String PHOTO_DIRECTORY = "AmazMod/Photo";
     public static final byte MODE_DOWNLOAD = 'D';
     public static final byte MODE_SCREENSHOT = 'S';
+    public static final byte MODE_PHOTO = 'P';
     public static final String BLOCK_APP = "999999";
     public static final String WATCHFACE_FOLDER = "/sdcard/WatchFace";
 
@@ -33,7 +35,7 @@ public class Constants {
     public static final String FILE_LOG_BUNDLE = "/sdcard/log_bundle.log.gz";
     public static final String SHELL_COMMAND_LOG_BUNDLE = "adb shell logcat -d -v long | gzip > " + FILE_LOG_BUNDLE;
 
-    public static final String FAQ_URL = "https://github.com/edotassi/AmazMod/blob/dev/FAQ.md";
+    public static final String FAQ_URL = "https://github.com/RedBloodDeadman/AmazMod/blob/dev/FAQ.md";
 
     public static final String WIDGETS_LIST_SAVED_CODE = "widgets_saved";
     public static final String WIDGETS_LIST_EMPTY_CODE = "I_want_no_widgets";
@@ -74,6 +76,9 @@ public class Constants {
     public static final String PREF_AMAZMOD_DARK_THEME = "preference.amazmod.dark_theme";
     public static final String PREF_COMMAND_HISTORY = "preference.command.history";
     public static final String PREF_LAST_DONATION_ALERT = "preference.lastdonationalert";
+    public static final String PREF_DATA_TRANSFER_METHOD = "preference.amazmodservice.transfer.method";
+    public static final String PREF_DATA_TRANSFER_METHOD_BLUETOOTH = "1";
+    public static final String PREF_DATA_TRANSFER_METHOD_WIFI = "2";
 
     public static final String PREF_ENABLE_MAPS_NOTIFICATION = "preference.enable.maps.notification";
     public static final boolean PREF_ENABLE_MAPS_NOTIFICATION_DEFAULT = false;

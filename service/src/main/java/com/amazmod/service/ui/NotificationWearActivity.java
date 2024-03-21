@@ -1,5 +1,6 @@
 package com.amazmod.service.ui;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -14,6 +15,7 @@ import android.provider.Settings;
 import android.support.wearable.view.BoxInsetLayout;
 import android.support.wearable.view.DotsPageIndicator;
 import android.support.wearable.view.SwipeDismissFrameLayout;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.WindowManager;
 
@@ -34,9 +36,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
 
+import amazmod.com.transport.data.NotificationData;
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import io.reactivex.Flowable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public class NotificationWearActivity extends Activity {
 
@@ -72,7 +79,7 @@ public class NotificationWearActivity extends Activity {
         key = getIntent().getStringExtra(KEY);
         mode = getIntent().getStringExtra(MODE);
 
-        if (NotificationStore.getCustomNotification(key) == null){
+        if (NotificationStore.getCustomNotification(key) == null) {
             Logger.error("onCreate: invalid key '" + key + "' - notification will not be shown");
             finish();
             return;
@@ -85,11 +92,11 @@ public class NotificationWearActivity extends Activity {
         ButterKnife.bind(this);
 
         swipeLayout.addCallback(new SwipeDismissFrameLayout.Callback() {
-                                   @Override
-                                   public void onDismissed(SwipeDismissFrameLayout layout) {
-                                       finish();
-                                   }
-                               });
+            @Override
+            public void onDismissed(SwipeDismissFrameLayout layout) {
+                finish();
+            }
+        });
 
         HorizontalGridViewPager mGridViewPager = findViewById(R.id.pager);
         DotsPageIndicator mPageIndicator = findViewById(R.id.page_indicator);
@@ -154,22 +161,22 @@ public class NotificationWearActivity extends Activity {
             if (!file.exists()) {
                 Logger.debug("File " + Constants.CUSTOM_NOTIFICATION_SOUND + " does not exist, using default notification sound");
                 sound = Uri.parse(Constants.RES_PREFIX + R.raw.alerts_notification);
-            }else{
+            } else {
                 Logger.debug("File " + Constants.CUSTOM_NOTIFICATION_SOUND + " detected, will use it as notification sound");
                 sound = Uri.fromFile(file);
             }
-                try {
-                    mp.setDataSource(getApplicationContext(), sound);
-                    mp.prepare();
-                    Logger.debug("Play notification sound");
-                } catch (IOException e) {
-                    Logger.error("Can't play notification sound");
-                }
+            try {
+                mp.setDataSource(getApplicationContext(), sound);
+                mp.prepare();
+                Logger.debug("Play notification sound");
+            } catch (IOException e) {
+                Logger.error("Can't play notification sound");
+            }
             mp.start();
         }
 
-        Logger.info("NotificationWearActivity onCreate key: " + key + " | mode: "+ mode
-                + " | wasLckd: "+ wasScreenLocked + " | mustLck: " + mustLockDevice
+        Logger.info("NotificationWearActivity onCreate key: " + key + " | mode: " + mode
+                + " | wasLckd: " + wasScreenLocked + " | mustLck: " + mustLockDevice
                 + " | scrTg: " + screenToggle);
     }
 
@@ -177,7 +184,7 @@ public class NotificationWearActivity extends Activity {
         FragmentManager manager = this.getFragmentManager();
         if (manager.getBackStackEntryCount() > 0) {
             Logger.warn("NotificationWearActivity ***** clearBackStack getBackStackEntryCount: " + manager.getBackStackEntryCount());
-            while (manager.getBackStackEntryCount() > 0){
+            while (manager.getBackStackEntryCount() > 0) {
                 manager.popBackStackImmediate();
             }
         }
@@ -200,13 +207,17 @@ public class NotificationWearActivity extends Activity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        findViewById(R.id.activity_wear_root_layout).dispatchTouchEvent(event);
+        try {
+            rootLayout.dispatchTouchEvent(event);
 
-        if (screenToggle)
-            setScreenOn();
+            if (screenToggle)
+                setScreenOn();
 
-        if (!keyboardVisible) {
-            startTimerFinish();
+            if (!keyboardVisible) {
+                startTimerFinish();
+            }
+        } catch (IllegalArgumentException e) {
+            Logger.error(e.toString());
         }
         return false;
     }
@@ -229,7 +240,7 @@ public class NotificationWearActivity extends Activity {
             handler.removeCallbacks(activityFinishRunnable);
     }
 
-    public void setKeyboardVisible(boolean visible){
+    public void setKeyboardVisible(boolean visible) {
         keyboardVisible = visible;
     }
 
@@ -266,8 +277,8 @@ public class NotificationWearActivity extends Activity {
         } else if (wasScreenLocked)
             mustLockDevice = true;
 
-        if (specialNotification)
-            NotificationStore.removeCustomNotification(key, mContext); // Remove custom notification
+//        if (specialNotification)
+//            NotificationStore.removeCustomNotification(key, mContext); // Remove custom notification
     }
 
     private void lock() {
@@ -302,11 +313,11 @@ public class NotificationWearActivity extends Activity {
         }
     }
 
-    private void setScreenOff(){
+    private void setScreenOff() {
         setScreenModeOff(true);
     }
 
-    private void setScreenOn(){
+    private void setScreenOn() {
         setScreenModeOff(false);
     }
 

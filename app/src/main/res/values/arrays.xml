@@ -80,6 +80,16 @@
         <item>20000</item>
     </string-array>
 
+    <string-array name="pref_amazmodservice_data_transfer_entries" translatable="false">
+        <item>Bluetooth</item>
+        <item>WiFi (Unstable)</item>
+    </string-array>
+
+    <string-array name="pref_amazmodservice_data_transfer_values" translatable="false">
+        <item>1</item>
+        <item>2</item>
+    </string-array>
+
     <string-array name="pref_battery_chart_range_entries">
         <item>1 day</item>
         <item>2 days</item>

@@ -1,5 +1,24 @@
 <changelog>
     <release
+        date="2024-03-21"
+        versionCode="233"
+        versionName="v1.2.5">
+        <new>Added app actions and intents to notifications</new>
+        <new>The ability to obtain background location has been returned</new>
+        <new>Added auto update for notifications list</new>
+        <new>Improved image processing and compression</new>
+        <new>Added new applications to the VoIP list</new>
+        <new>Added the ability to select WiFi (FTP) for all data transfers (download, upload, APK installation, WatchFaces installation)</new>
+        <bugfix>Reverting to getting battery data with AmazMod due to problems with the official method</bugfix>
+        <bugfix>Fixed FTP on Stratos 3</bugfix>
+        <bugfix>Fixed deletion of notifications on the watch when deleted on the phone</bugfix>
+        <bugfix>Fixed notifications count on Stratos 3</bugfix>
+        <bugfix>Fixed display of colored icons on Stratos 3</bugfix>
+        <bugfix>Fixed the color of small icons if the color and background are the same</bugfix>
+        <bugfix>An attempt to fix the cyclic restart of the service in case of connection problems</bugfix>
+        <info>UI/UX updates and optimizations</info>
+    </release>
+    <release
         date="2021-05-21"
         versionCode="232"
         versionName="v1.2.4">

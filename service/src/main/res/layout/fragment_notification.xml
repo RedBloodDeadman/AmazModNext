@@ -111,64 +111,9 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingTop="12dp"
+                android:clipToPadding="false"
                 android:orientation="vertical">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginRight="8dp"
-                    android:background="@android:color/transparent"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:orientation="horizontal">
-
-                    <androidx.constraintlayout.widget.ConstraintLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-
-                        <ImageView
-                            android:id="@+id/fragment_custom_notification_icon"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_marginEnd="8dp"
-                            android:layout_marginBottom="8dp"
-                            android:contentDescription="@string/default_icon"
-                            android:padding="4dp"
-                            app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:srcCompat="@drawable/amazmod" />
-
-                        <ImageView
-                            android:id="@+id/fragment_custom_notification_icon_badge"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginBottom="4dp"
-                            android:background="@drawable/preference_wrapped_icon"
-                            android:backgroundTint="@color/black"
-                            android:contentDescription="@string/default_icon"
-                            app:layout_constraintBottom_toBottomOf="@+id/fragment_custom_notification_icon"
-                            app:layout_constraintEnd_toEndOf="@+id/fragment_custom_notification_icon"
-                            app:srcCompat="@drawable/amazmod" />
-
-                    </androidx.constraintlayout.widget.ConstraintLayout>
-                </LinearLayout>
-
-                <androidx.emoji.widget.EmojiTextView
-                    android:id="@+id/fragment_custom_notification_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginRight="8dp"
-                    android:gravity="center_vertical|center_horizontal"
-                    android:paddingLeft="2dp"
-                    android:paddingTop="2dp"
-                    android:paddingRight="2dp"
-                    android:textColor="@color/text"
-                    android:textStyle="bold"
-                    tools:text="@string/title" />
 
                 <TextView
                     android:id="@+id/fragment_custom_notification_time"
@@ -183,13 +128,70 @@
                     tools:text="00:00" />
 
                 <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="32dp"
+                    android:layout_marginRight="32dp"
+                    android:background="@android:color/transparent"
+                    android:gravity="center_vertical|center_horizontal"
+                    android:orientation="horizontal">
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content">
+
+                        <ImageView
+                            android:id="@+id/fragment_custom_notification_icon"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:background="@drawable/preference_wrapped_icon"
+                            android:backgroundTint="@color/black"
+                            android:contentDescription="@string/default_icon"
+                            android:padding="6dp"
+                            android:scaleType="fitCenter"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintHorizontal_bias="0.0"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent"
+                            app:layout_constraintVertical_bias="0.0"
+                            app:srcCompat="@drawable/amazmod" />
+
+                        <ImageView
+                            android:id="@+id/fragment_custom_notification_icon_badge"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:background="@drawable/preference_wrapped_icon"
+                            android:backgroundTint="@color/black"
+                            android:padding="2dp"
+                            android:contentDescription="@string/default_icon"
+                            android:scaleType="fitCenter"
+                            app:layout_constraintBottom_toBottomOf="@+id/fragment_custom_notification_icon"
+                            app:layout_constraintEnd_toEndOf="@+id/fragment_custom_notification_icon"
+                            app:srcCompat="@drawable/amazmod" />
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+                    <androidx.emoji.widget.EmojiTextView
+                        android:id="@+id/fragment_custom_notification_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginLeft="8dp"
+                        android:layout_marginRight="8dp"
+                        android:textColor="@color/text"
+                        android:textStyle="bold"
+                        android:lines="2"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        tools:text="Name Surname Name Surname" />
+                </LinearLayout>
+
+                <LinearLayout
                     android:id="@+id/fragment_custom_notification_replies_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="8dp"
-                    android:layout_marginRight="8dp"
-                    android:layout_marginBottom="16dp"
                     android:minHeight="36dp"
+                    android:gravity="center"
                     android:orientation="vertical">
 
                     <ImageView
@@ -198,6 +200,8 @@
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:layout_marginTop="8dp"
+                        android:layout_marginLeft="8dp"
+                        android:layout_marginRight="8dp"
                         android:contentDescription="@string/default_icon"
                         android:gravity="center"
                         android:scaleType="centerCrop"
@@ -207,6 +211,8 @@
                         android:id="@+id/fragment_custom_notification_text"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginLeft="8dp"
+                        android:layout_marginRight="8dp"
                         android:gravity="center_vertical|center_horizontal"
                         android:textAlignment="center"
                         android:textColor="@color/text"
@@ -216,20 +222,30 @@
                         android:id="@+id/fragment_custom_notification_picture"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
                         android:contentDescription="@string/default_icon"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/amazmod"
                         android:visibility="gone" />
                 </LinearLayout>
 
-                <Button
-                    android:id="@+id/fragment_notification_reply_button"
+                <LinearLayout
+                    android:id="@+id/fragment_actions_list"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="8dp"
-                    android:background="@drawable/wear_button_rect_gray"
-                    android:drawableTop="@drawable/reply_white"
-                    android:paddingTop="12dp"
-                    android:textColor="@color/white"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="visible"
+                    android:useDefaultMargins="true"
+                    tools:visibility="visible" />
+
+                <LinearLayout
+                    android:id="@+id/fragment_action_reply_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="visible"
+                    android:useDefaultMargins="true"
                     tools:visibility="visible" />
 
                 <LinearLayout
@@ -238,6 +254,17 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:visibility="gone"
+                    tools:visibility="visible" />
+
+                <Button
+                    android:id="@+id/fragment_notification_intent_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/wear_button_rect_gray"
+                    android:drawableTop="@drawable/baseline_app_shortcut_24"
+                    android:paddingTop="12dp"
                     tools:visibility="visible" />
 
                 <Button
@@ -265,7 +292,7 @@
                     android:layout_height="48dp"
                     android:layout_gravity="center"
                     android:layout_marginTop="8dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginBottom="8dp"
                     android:background="@drawable/wear_button_rect_red"
                     android:drawableTop="@drawable/outline_delete_white_24"
                     android:paddingTop="12dp"

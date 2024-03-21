@@ -17,15 +17,13 @@ import amazmod.com.transport.Constants;
 
 public class SilenceApplicationHelper {
 
-    public static void silenceAppFromNotification(String notificationKey, int minutes) {
-        Logger.debug("SilenceApplicationHelper silenceAppFromNotification: " + notificationKey + " / Minutes: " + String.valueOf(minutes));
-        String packageName = notificationKey.split("\\|")[1];
+    public static void silenceAppFromNotification(String packageName, int minutes) {
+        Logger.debug("SilenceApplicationHelper silenceAppFromNotification: " + packageName + " / Minutes: " + String.valueOf(minutes));
         if (Integer.parseInt(Constants.BLOCK_APP) == minutes){
             disablePackage(packageName);
         }else{
             silenceApp(packageName, minutes);
         }
-
     }
 
     public static void silenceApp(String packageName, int minutes) {

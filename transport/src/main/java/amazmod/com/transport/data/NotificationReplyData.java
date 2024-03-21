@@ -14,15 +14,18 @@ public class NotificationReplyData extends Transportable implements Parcelable {
 
     public static final String NOTIFICATION_ID = "notificationId";
     public static final String REPLY = "reply";
+    public static final String TITLE = "title";
 
-    private String notificationId;
+    private Integer notificationId;
+    private String title;
     private String reply;
 
     public NotificationReplyData() {
     }
 
     protected NotificationReplyData(Parcel in) {
-        notificationId = in.readString();
+        notificationId = in.readInt();
+        title = in.readString();
         reply = in.readString();
     }
 
@@ -38,11 +41,11 @@ public class NotificationReplyData extends Transportable implements Parcelable {
         }
     };
 
-    public String getNotificationId() {
+    public Integer getNotificationId() {
         return notificationId;
     }
 
-    public void setNotificationId(String notificationId) {
+    public void setNotificationId(Integer notificationId) {
         this.notificationId = notificationId;
     }
 
@@ -54,11 +57,20 @@ public class NotificationReplyData extends Transportable implements Parcelable {
         this.reply = reply;
     }
 
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public static NotificationReplyData fromDataBundle(DataBundle dataBundle) {
         NotificationReplyData notificationReplyData = new NotificationReplyData();
 
-        notificationReplyData.setNotificationId(dataBundle.getString("key"));
+        notificationReplyData.setNotificationId(dataBundle.getInt("id"));
         notificationReplyData.setReply(dataBundle.getString("message"));
+        notificationReplyData.setTitle(dataBundle.getString("title"));
 
         return notificationReplyData;
     }
@@ -66,8 +78,9 @@ public class NotificationReplyData extends Transportable implements Parcelable {
     @Override
     public DataBundle toDataBundle(DataBundle dataBundle) {
 
-        dataBundle.putString(NOTIFICATION_ID, notificationId);
+        dataBundle.putInt(NOTIFICATION_ID, notificationId);
         dataBundle.putString(REPLY, reply);
+        dataBundle.putString(TITLE, title);
 
         return dataBundle;
     }
@@ -86,7 +99,8 @@ public class NotificationReplyData extends Transportable implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(notificationId);
+        dest.writeInt(notificationId);
         dest.writeString(reply);
+        dest.writeString(title);
     }
 }

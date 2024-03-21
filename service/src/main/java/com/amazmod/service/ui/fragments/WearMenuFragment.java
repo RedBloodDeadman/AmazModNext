@@ -168,7 +168,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
         //Apps Manager
         item = new MenuItems(
                 getResources().getString(R.string.activity_menu_apps_mamager),
-                R.drawable.ic_action_select_all
+                R.drawable.baseline_apps_24
         );
         item.setActionWearActivity(LauncherWearGridActivity.APPS);
         itemList.add(item);

@@ -1,65 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:layout_gravity="center_vertical"
-    android:foreground="?selectableItemBackground"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:foreground="?selectableItemBackground"
+    tools:layout_gravity="center_vertical">
 
     <ImageView
         android:id="@+id/row_appinfo_icon"
         android:layout_width="40dp"
         android:layout_height="40dp"
-        android:layout_marginBottom="8dp"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/amazmod" />
 
-    <TextView
-        android:id="@+id/row_appinfo_appname"
-        android:layout_width="176dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="4dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:singleLine="true"
-        android:ellipsize="marquee"
-        android:textAlignment="viewStart"
-        android:textColor="#FFFFFFFF"
-        android:textSize="16sp"
-        android:gravity="bottom|start"
-        android:lineSpacingExtra="-4sp"
-        android:marqueeRepeatLimit ="marquee_forever"
-        android:focusableInTouchMode="true"
-        android:focusable="true"
-        android:scrollHorizontally="true"
-        tools:text="This is a Long App Name for testing purposes"
-        app:layout_constraintStart_toEndOf="@+id/row_appinfo_icon"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_margin="8dp"
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/row_appinfo_package"
-        android:layout_width="176dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="4dp"
-        android:singleLine="true"
-        android:ellipsize="marquee"
-        android:marqueeRepeatLimit ="marquee_forever"
-        android:focusableInTouchMode="true"
-        android:focusable="true"
-        android:scrollHorizontally="true"
-        android:lineSpacingExtra="-4sp"
-        android:textColor="#FFFFFFFF"
-        tools:text="Package Name"
-        android:textSize="12sp"
-        app:layout_constraintTop_toBottomOf="@+id/row_appinfo_appname"
-        app:layout_constraintStart_toEndOf="@+id/row_appinfo_icon" />
+        <TextView
+            android:id="@+id/row_appinfo_appname"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:lines="1"
+            android:ellipsize="end"
+            android:textAlignment="viewStart"
+            android:textColor="#FFFFFFFF"
+            android:textSize="16sp"
+            tools:text="This is a Long App Name for testing purp  oses This is a Long App N      ame for testing purposes" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:id="@+id/row_appinfo_package"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:textColor="#FFFFFFFF"
+            android:textSize="12sp"
+            tools:text="Package Name" />
+    </LinearLayout>
+</LinearLayout>

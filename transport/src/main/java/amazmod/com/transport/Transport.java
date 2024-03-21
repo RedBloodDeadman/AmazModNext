@@ -40,6 +40,8 @@ public class Transport {
     public static final String WIDGETS_DATA = "request_widgets";
     public static final String DIRECTORY = "directory";
     public static final String REPLY = "reply";
+    public static final String ACTION = "action";
+    public static final String INTENT = "intent";
     public static final String TOGGLE_MUSIC = "toggle_music";
     public static final String NEXT_MUSIC = "next_music";
     public static final String RESULT_DELETE_FILE = "result_delete_file";
@@ -48,6 +50,9 @@ public class Transport {
     public static final String FILE_UPLOAD = "file_upload";
     public static final String SILENCE = "silence";
     public static final String LOCAL_IP = "request_local_IP";
+    public static final String FTP_ON_STATE_CHANGED = "ftp_on_state_changed";
+    public static final String ON_AP_ENABLE_RESULT = "on_ap_enable_result";
+    public static final String ON_AP_STATE_CHANGED = "on_ap_state_changed";
 
     // Official API actions
     public static final String OFFICIAL_REQUEST_DEVICE_INFO = "com.huami.watch.companion.transport.RequestDeviceInfo";
@@ -57,4 +62,15 @@ public class Transport {
     public static final String HTTP_REQUEST = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_REQUEST";
     public static final String HTTP_PINGBACK = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_PINGBACK";
     public static final String HTTP_RESULT = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_RESULT";
+
+
+    public static final String WIFI_FTP_ENABLE = "enable_ftp";
+    public static final String WIFI_FTP_DISABLE = "disable_ftp";
+    public static final String WIFI_ENABLE_AP = "enable_ap";
+    public static final String WIFI_DISABLE_AP = "disable_ap";
+    public static final String WIFI_START_SERVICE = "start_service";
+    public static final String WIFI_SECURITY_MODE = "key_keymgmt";
+    public static final String WIFI_SSID = "key_ssid";
+    public static final String WIFI_PASSWORD = "key_pswd";
+    public static final int WIFI_WPA2 = 4;
 }

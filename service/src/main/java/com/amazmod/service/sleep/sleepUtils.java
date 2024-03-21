@@ -22,6 +22,7 @@ import java.util.Locale;
 
 import amazmod.com.transport.Constants;
 import amazmod.com.transport.data.NotificationData;
+import amazmod.com.transport.util.ImageUtils;
 
 public class sleepUtils {
     public static float[] linkedToArray(LinkedList<Float> list){
@@ -56,18 +57,7 @@ public class sleepUtils {
 
         // Get and set icon
         Drawable drawable = context.getResources().getDrawable(R.drawable.ic_sleepasandroid);
-        Bitmap bitmap = Bitmap.createBitmap(drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-        drawable.draw(canvas);
-        if (bitmap.getWidth() > 48) //This is not necessary but added in case that we edit icon
-            bitmap = Bitmap.createScaledBitmap(bitmap, 48, 48, true);
-        int width = bitmap.getWidth();
-        int height = bitmap.getHeight();
-        int[] intArray = new int[width * height];
-        notificationData.setIcon(intArray);
-        notificationData.setIconWidth(width);
-        notificationData.setIconHeight(height);
+        notificationData.setIcon(ImageUtils.bitmap2bytes(ImageUtils.drawableToBitmap(drawable), ImageUtils.smallIconQuality));
 
         notificationService.post(notificationData);
     }

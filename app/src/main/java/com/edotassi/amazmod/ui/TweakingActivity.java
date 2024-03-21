@@ -31,6 +31,7 @@ import com.edotassi.amazmod.event.ResultShellCommand;
 import com.edotassi.amazmod.support.DownloadHelper;
 import com.edotassi.amazmod.support.ShellCommandHelper;
 import com.edotassi.amazmod.support.ThemeHelper;
+import com.edotassi.amazmod.transport.TransportService;
 import com.edotassi.amazmod.util.FilesUtil;
 import com.edotassi.amazmod.util.Screen;
 import com.edotassi.amazmod.watch.Watch;
@@ -38,8 +39,6 @@ import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.Task;
 import com.huami.watch.transport.DataBundle;
-import com.huami.watch.transport.TransportDataItem;
-import com.huami.watch.transport.Transporter;
 import com.tingyik90.snackprogressbar.SnackProgressBar;
 import com.tingyik90.snackprogressbar.SnackProgressBarManager;
 
@@ -62,7 +61,7 @@ import de.mateware.snacky.Snacky;
 
 import static android.graphics.Bitmap.CompressFormat.PNG;
 
-public class TweakingActivity extends BaseAppCompatActivity implements Transporter.DataListener {
+public class TweakingActivity extends BaseAppCompatActivity {
     public final static int REQ_CODE_COMMAND_HISTORY = 100;
     String SSID = "huami-amazfit-amazmod-4E68";
     String pswd = "12345678";
@@ -71,7 +70,6 @@ public class TweakingActivity extends BaseAppCompatActivity implements Transport
     String TAG = "Tweak-menu-FTP: ";
     private SnackProgressBarManager snackProgressBarManager;
     private Context mContext;
-    private Transporter ftpTransporter;
     private ActivityTweakingBinding binding;
 
     @Override
@@ -153,12 +151,6 @@ public class TweakingActivity extends BaseAppCompatActivity implements Transport
 
         EventBus.getDefault().register(this);
 
-        // Set up FTP transporter listener
-        ftpTransporter = Transporter.get(this, "com.huami.wififtp");
-        ftpTransporter.addDataListener(this);
-        if (!ftpTransporter.isTransportServiceConnected())
-            ftpTransporter.connectTransportService();
-
         binding.activityTweakingWatchLocalIp.setOnClickListener(v -> {
             getWatchLocalIP();
         });
@@ -220,33 +212,99 @@ public class TweakingActivity extends BaseAppCompatActivity implements Transport
         });
 
         binding.activityTweakingWifiApOn.setOnClickListener(v -> {
-            wifi_ftp_toggle(1, 3);
+            enableWifiAp();
         });
 
         binding.activityTweakingWifiApOff.setOnClickListener(v -> {
-            wifi_ftp_toggle(0, 3);
+            disableWifiAp();
         });
 
         binding.activityTweakingFtpOn.setOnClickListener(v -> {
-            wifi_ftp_toggle(3, 1);
+            enableFtpServer();
         });
 
         binding.activityTweakingFtpOff.setOnClickListener(v -> {
-            wifi_ftp_toggle(3, 0);
+            disableFtpServer();
+        });
+    }
+
+    private void disableFtpServer() {
+        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.ftp_dissabling)), SnackProgressBarManager.LENGTH_LONG);
+        Watch.get().sendSimpleData(Transport.WIFI_FTP_DISABLE, Transport.FTP_ON_STATE_CHANGED, TransportService.TRANSPORT_FTP).continueWith(new Continuation<OtherData, Object>() {
+            @Override
+            public Object then(@NonNull Task<OtherData> task) throws Exception {
+                if (task.isSuccessful()) {
+                    Logger.debug(TAG + "FTP server disabled");
+                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, "FTP server " + getString(R.string.disabled)), SnackProgressBarManager.LENGTH_SHORT);
+                } else {
+                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.error)), SnackProgressBarManager.LENGTH_LONG);
+                    Logger.debug(TAG + "WIFI_FTP_DISABLE error");
+                }
+                return null;
+            }
+        });
+    }
+
+    private void enableFtpServer() {
+        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.ftp_enabling)), SnackProgressBarManager.LENGTH_LONG);
+        Watch.get().sendSimpleData(Transport.WIFI_FTP_ENABLE, Transport.FTP_ON_STATE_CHANGED, TransportService.TRANSPORT_FTP).continueWith(new Continuation<OtherData, Object>() {
+            @Override
+            public Object then(@NonNull Task<OtherData> task) throws Exception {
+                if (task.isSuccessful()) {
+                    // FTP enabled
+                    Logger.debug(TAG + "FTP server enabled.");
+                    getWatchLocalIP(true);
+                } else {
+                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.error)), SnackProgressBarManager.LENGTH_LONG);
+
+                    Logger.debug(TAG + "WIFI_FTP_ENABLE error");
+                }
+                return null;
+            }
+        });
+    }
+
+    private void disableWifiAp() {
+        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.wifi_ap_dissabling)), SnackProgressBarManager.LENGTH_LONG);
+        TransportService.sendWithTransporterFtp(Transport.WIFI_DISABLE_AP, null);
+        Logger.debug(TAG + "watch's WiFi AP disabled");
+        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, "WiFi Access Point " + getString(R.string.disabled)), SnackProgressBarManager.LENGTH_SHORT);
+    }
+
+    private void enableWifiAp() {
+        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.wifi_ap_enabling)), SnackProgressBarManager.LENGTH_LONG);
+
+        TransportService.sendWithTransporterFtp(Transport.WIFI_START_SERVICE, null);
+        DataBundle dataBundle = new DataBundle();
+        dataBundle.putInt(Transport.WIFI_SECURITY_MODE, Transport.WIFI_WPA2);
+        dataBundle.putString(Transport.WIFI_SSID, SSID);
+        dataBundle.putString(Transport.WIFI_PASSWORD, pswd);
+        Watch.get().sendSimpleData(Transport.WIFI_ENABLE_AP, Transport.ON_AP_ENABLE_RESULT, TransportService.TRANSPORT_FTP).continueWith(new Continuation<OtherData, Object>() {
+            @Override
+            public Object then(@NonNull Task<OtherData> task) throws Exception {
+                if (task.isSuccessful()) {
+                    // (State 13 watch WiFi AP is on)
+                    Logger.debug(TAG + "watch's WiFi AP is enabled");
+                    // WiFi AP enabled.
+                    runOnUiThread(() -> snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_HORIZONTAL, "WiFi    : " + SSID + "\nPassword: " + pswd)
+                            .setAction(getString(R.string.close), new SnackProgressBar.OnActionClickListener() {
+                                @Override
+                                public void onActionClick() {
+                                    snackProgressBarManager.dismissAll();
+                                }
+                            }), SnackProgressBarManager.LENGTH_INDEFINITE));
+                } else {
+                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, getString(R.string.error)), SnackProgressBarManager.LENGTH_LONG);
+                    Logger.debug(TAG + "WIFI_ENABLE_AP error");
+                }
+                return null;
+            }
         });
     }
 
     @Override
     public void onDestroy() {
         EventBus.getDefault().unregister(this);
-
-        Logger.debug("FTP: disconnect transporter");
-        if (ftpTransporter.isTransportServiceConnected()) {
-            ftpTransporter.removeDataListener(this);
-            ftpTransporter.disconnectTransportService();
-            Logger.debug("FTP: transporter disconnected");
-            ftpTransporter = null;
-        }
 
         super.onDestroy();
     }
@@ -524,27 +582,27 @@ public class TweakingActivity extends BaseAppCompatActivity implements Transport
         final long startedAt = System.currentTimeMillis();
 
         Watch.get().downloadFile(this, fileUploadData.getPath(), fileUploadData.getName(), size, Constants.MODE_SCREENSHOT,
-                new Watch.OperationProgress() {
-                    @Override
-                    public void update(final long duration, final long byteSent, final long remainingTime, final double progress) {
-                        TweakingActivity.this.runOnUiThread(new Runnable() {
+                        new Watch.OperationProgress() {
                             @Override
-                            public void run() {
-                                String remaingSize = Formatter.formatShortFileSize(TweakingActivity.this, size - byteSent);
-                                double kbSent = byteSent / 1024d;
-                                double speed = kbSent / (duration / 1000);
-                                DecimalFormat df = new DecimalFormat("#.00");
+                            public void update(final long duration, final long byteSent, final long remainingTime, final double progress) {
+                                TweakingActivity.this.runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        String remaingSize = Formatter.formatShortFileSize(TweakingActivity.this, size - byteSent);
+                                        double kbSent = byteSent / 1024d;
+                                        double speed = kbSent / (duration / 1000);
+                                        DecimalFormat df = new DecimalFormat("#.00");
 
-                                String duration = DurationFormatUtils.formatDuration(remainingTime, "mm:ss", true);
-                                String message = getString(R.string.sending) + " - " + duration + " - " + remaingSize + " - " + df.format(speed) + " kb/s";
+                                        String duration = DurationFormatUtils.formatDuration(remainingTime, "mm:ss", true);
+                                        String message = getString(R.string.sending) + " - " + duration + " - " + remaingSize + " - " + df.format(speed) + " kb/s";
 
-                                progressBar.setMessage(message);
-                                snackProgressBarManager.setProgress((int) progress);
-                                snackProgressBarManager.updateTo(progressBar);
+                                        progressBar.setMessage(message);
+                                        snackProgressBarManager.setProgress((int) progress);
+                                        snackProgressBarManager.updateTo(progressBar);
+                                    }
+                                });
                             }
-                        });
-                    }
-                }, cancellationTokenSource.getToken())
+                        }, cancellationTokenSource.getToken())
                 .continueWith(new Continuation<Void, Object>() {
                     @Override
                     public Object then(@NonNull Task<Void> task) {
@@ -632,95 +690,6 @@ public class TweakingActivity extends BaseAppCompatActivity implements Transport
                         return null;
                     }
                 });
-    }
-
-    public void wifi_ftp_toggle(int wifi, int ftp) {
-        // 0: off, 1: on, 3: do nothing
-        String message = getString(R.string.error);
-        if (ftpTransporter.isTransportServiceConnected()) {
-            // Toggle WiFi AP
-            if (wifi == 0)
-                ftpTransporter.send("disable_ap");
-            else if (wifi == 1) {
-                ftpTransporter.send("start_service");
-                DataBundle dataBundle = new DataBundle();
-                dataBundle.putInt("key_keymgmt", 4); // WPA2
-                dataBundle.putString("key_ssid", SSID);
-                dataBundle.putString("key_pswd", pswd);
-                // Enable watch WiFi AP / FTP
-                ftpTransporter.send("enable_ap", dataBundle);
-            }
-            // Toggle FTP
-            if (ftp == 0)
-                ftpTransporter.send("disable_ftp");
-            else if (ftp == 1)
-                ftpTransporter.send("enable_ftp");
-
-            // Toast message
-            message = ((wifi < 3) ? ((wifi == 0) ? getString(R.string.wifi_ap_dissabling) : getString(R.string.wifi_ap_enabling)) + ((ftp < 3) ? "\n" : "") : "") + ((ftp < 3) ? ((ftp == 0) ? getString(R.string.ftp_dissabling) : getString(R.string.ftp_enabling)) : "");
-        }
-        // Message
-        snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, message), SnackProgressBarManager.LENGTH_LONG);
-    }
-
-    public void onDataReceived(TransportDataItem item) {
-        // Transmitted action
-        String action = item.getAction();
-
-        // Get key_new_state
-        DataBundle data = item.getData();
-        int key_new_state;
-        if (data != null)
-            key_new_state = data.getInt("key_new_state");
-        else {
-            Logger.debug(TAG + "transporter action: " + action + " (without key_new_state)");
-            return;
-        }
-
-        if ("on_ap_state_changed".equals(action)) {
-            // Watch WiFi AP status changed
-            if (key_new_state != 13) {
-                if (data.getInt("key_new_state") == 11) {
-                    Logger.debug(TAG + "watch's WiFi AP disabled");
-                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, "WiFi Access Point " + getString(R.string.disabled)), SnackProgressBarManager.LENGTH_SHORT);
-                } else
-                    Logger.debug(TAG + "on_ap_state_changed: " + key_new_state);
-                return;
-            }
-
-            // (State 13 watch WiFi AP is on)
-            Logger.debug(TAG + "watch's WiFi AP is enabled");
-            // WiFi AP enabled.
-            snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_HORIZONTAL, "WiFi    : " + SSID + "\nPassword: " + pswd)
-                    .setAction(getString(R.string.close), new SnackProgressBar.OnActionClickListener() {
-                        @Override
-                        public void onActionClick() {
-                            snackProgressBarManager.dismissAll();
-                        }
-                    }), SnackProgressBarManager.LENGTH_INDEFINITE);
-        } else if ("ftp_on_state_changed".equals(action)) {
-            if (key_new_state != 2) {
-                if (key_new_state == 1) {
-                    Logger.debug(TAG + "FTP server disabled");
-                    snackProgressBarManager.show(new SnackProgressBar(SnackProgressBar.TYPE_CIRCULAR, "FTP server " + getString(R.string.disabled)), SnackProgressBarManager.LENGTH_SHORT);
-                } else
-                    Logger.debug(TAG + "ftp_on_state_changed: " + key_new_state);
-
-                return;
-            }
-
-            // FTP enabled
-            Logger.debug(TAG + "FTP server enabled.");
-            getWatchLocalIP(true);
-
-        } else if ("on_ap_enable_result".equals(action)) {
-            if (key_new_state == 1)
-                Logger.debug(TAG + "watch WiFi AP enabled successfully");
-            else
-                Logger.debug(TAG + "on_ap_enable_result (key_new_state = " + key_new_state + ")");
-        } else {
-            Logger.debug(TAG + "transporter action: " + action + " (key_new_state = " + key_new_state + ")");
-        }
     }
 
     public void getWatchLocalIP() {

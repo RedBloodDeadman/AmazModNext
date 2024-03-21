@@ -6,6 +6,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
 import amazmod.com.transport.data.NotificationData;
+import amazmod.com.transport.util.ImageUtils;
 
 public class NotificationInfo {
 
@@ -35,13 +36,9 @@ public class NotificationInfo {
         this.notificationTime = notificationData.getTime();
         this.largeIconData = notificationData.getLargeIcon();
 
-        int[] iconData = notificationData.getIcon();
-        int iconWidth = notificationData.getIconWidth();
-        int iconHeight = notificationData.getIconHeight();
-        Bitmap bitmap = Bitmap.createBitmap(iconWidth, iconHeight, Bitmap.Config.ARGB_8888);
-        bitmap.setPixels(iconData, 0, iconWidth, 0, 0, iconWidth, iconHeight);
+        byte[] iconData = notificationData.getIcon();
 
-        this.icon = new BitmapDrawable(Resources.getSystem(), bitmap);
+        this.icon = new BitmapDrawable(Resources.getSystem(), ImageUtils.bytes2Bitmap(iconData));
 
         this.key = key;
 

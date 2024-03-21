@@ -28,6 +28,8 @@ public class DownloadHelper {
             return Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + Constants.DOWNLOAD_DIRECTORY;
         else if (mode == Constants.MODE_SCREENSHOT)
             return Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + Constants.SCREENSHOT_DIRECTORY;
+        else if (mode == Constants.MODE_PHOTO)
+            return Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + Constants.PHOTO_DIRECTORY;
         else return null;
     }
 }

@@ -106,9 +106,13 @@
     <string name="removing">REMOVING</string>
     <string name="muting">MUTING</string>
     <string name="sending_reply">SENDING REPLY</string>
+    <string name="sending_action">SENDING ACTION</string>
+    <string name="sending_intent">SENDING INTENT</string>
     <string name="deleted">Deleted</string>
     <string name="muted">Muted</string>
     <string name="reply_sent">Reply Sent</string>
+    <string name="action_sent">Action Sent</string>
+    <string name="intent_sent">Intent Sent</string>
     <string name="free_space">Free space</string>
     <string name="no_app_found">No app found to handle</string>
     <string name="please_wait_installation">Please wait until installation finishes…</string>
@@ -181,4 +185,7 @@
     <string name="alarm_dismiss">Dismiss</string>
     <string name="camera_delay">Delay</string>
     <string name="camera_shutter">Camera Shutter</string>
+
+    <string name="reset">Reset</string>
+    <string name="reset_apps_visibility">Reset apps visibility</string>
 </resources>

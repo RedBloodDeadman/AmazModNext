@@ -23,6 +23,17 @@
             android:summary="@string/pref_amazmod_overlay_launcher_summary"
             android:title="@string/pref_amazmod_overlay_launcher" />
 
+        <ListPreference
+            app:iconSpaceReserved="false"
+            android:defaultValue="Bluetooth"
+            android:dependency="preference.notifications.enable.custom.ui"
+            android:dialogTitle="Data transfer method"
+            android:entries="@array/pref_amazmodservice_data_transfer_entries"
+            android:entryValues="@array/pref_amazmodservice_data_transfer_values"
+            android:key="preference.amazmodservice.transfer.method"
+            android:summary="@string/data_transfer_method_descr"
+            android:title="@string/data_transfer_method" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

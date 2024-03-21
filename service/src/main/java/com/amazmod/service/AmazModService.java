@@ -41,7 +41,7 @@ public class AmazModService extends Application {
 
         //EventBus.getDefault().init(this);
         Logger.info("Tinylog configured debug: {} level: {}",
-                (BuildConfig.VERSION_NAME.toLowerCase().contains("dev"))?"TRUE":"FALSE", level.toUpperCase());
+                (BuildConfig.VERSION_NAME.toLowerCase().contains("dev")) ? "TRUE" : "FALSE", level.toUpperCase());
 
         FlowManager.init(this);
         cleanOldBatteryDb();
@@ -93,10 +93,10 @@ public class AmazModService extends Application {
         SettingsManager settingsManager = new SettingsManager(getContext());
         // Get phone app language
         String language = settingsManager.getString(Constants.PREF_DEFAULT_LOCALE, null);
-        Logger.debug("Amazmod locale app language: "+language);
+        Logger.debug("Amazmod locale app language: " + language);
 
         if (language == null)
-                return;
+            return;
         if (language.contains("iw")) {
             if (!new File("/system/fonts/NotoSansHebrew-Regular.ttf").exists()) {
                 language = "en_EN";
@@ -118,7 +118,7 @@ public class AmazModService extends Application {
         res.updateConfiguration(conf, dm);
         DeviceUtil.systemPutString(getContext(), "AmazModLocale", language);
 
-        Logger.debug("Amazmod locale set:"+getLocaleByLanguageCode(language));
+        Logger.debug("Amazmod locale set:" + getLocaleByLanguageCode(language));
     }
 
     private static Locale getLocaleByLanguageCode(String languageCode) {

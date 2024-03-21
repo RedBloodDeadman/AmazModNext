@@ -32,6 +32,7 @@ import java.util.List;
 
 import amazmod.com.models.Reply;
 import amazmod.com.transport.data.NotificationData;
+import amazmod.com.transport.util.ImageUtils;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 
@@ -57,6 +58,8 @@ public class NotificationService {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(Constants.INTENT_ACTION_REPLY);
+        filter.addAction(Constants.INTENT_ACTION_ACTION);
+        filter.addAction(Constants.INTENT_ACTION_INTENT);
         context.registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -90,7 +93,7 @@ public class NotificationService {
         if (DeviceUtil.isDNDActive(context)) {
             Logger.debug("NotificationService DND is on, notification not shown.");
             if ((enableCustomUI || forceCustom))
-                NotificationStore.addCustomNotification(notificationStoreKey, notificationSpec);
+                NotificationStore.addCustomNotification(notificationStoreKey, notificationSpec, context);
             return;
         }
 
@@ -99,7 +102,7 @@ public class NotificationService {
             if (notificationSpec.getText().equals("Test Notification")) {
                 if (forceCustom) {
                     Logger.debug("NotificationService1 notificationSpec.getKey(): " + key);
-                    NotificationStore.addCustomNotification(notificationStoreKey, notificationSpec);
+                    NotificationStore.addCustomNotification(notificationStoreKey, notificationSpec, context);
                     postWithCustomUI(notificationStoreKey);
                 } else {
                     Logger.debug("NotificationService2 notificationSpec.getKey(): " + key);
@@ -118,7 +121,7 @@ public class NotificationService {
             // Handles normal notifications
             Logger.debug("NotificationService6 notificationSpec.getKey(): " + key);
             if (enableCustomUI || forceCustom) {
-                NotificationStore.addCustomNotification(notificationStoreKey , notificationSpec);
+                NotificationStore.addCustomNotification(notificationStoreKey , notificationSpec, context);
                 if (NotificationFragment.keyboardIsEnable) {
                     final Vibrator mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                     if (mVibrator != null) {
@@ -152,15 +155,12 @@ public class NotificationService {
         Logger.debug("NotificationService postWithStandardUI notificationData: " +
                 notificationData.toString() + " / disableNotificationReplies: " + disableNotificationReplies);
 
-        int[] iconData = notificationData.getIcon();
-        int iconWidth = notificationData.getIconWidth();
-        int iconHeight = notificationData.getIconHeight();
-        Bitmap bitmap = Bitmap.createBitmap(iconWidth, iconHeight, Bitmap.Config.ARGB_8888);
-        bitmap.setPixels(iconData, 0, iconWidth, 0, 0, iconWidth, iconHeight);
+        byte[] iconData = notificationData.getIcon();
+        byte[] largeIconData = notificationData.getLargeIcon();
 
         Bundle bundle = new Bundle();
-        bundle.putParcelable(Notification.EXTRA_LARGE_ICON_BIG, bitmap);
-        bundle.putParcelable(Notification.EXTRA_LARGE_ICON, bitmap);
+        bundle.putParcelable(Notification.EXTRA_LARGE_ICON_BIG, ImageUtils.bytes2Bitmap(largeIconData));
+        bundle.putParcelable(Notification.EXTRA_LARGE_ICON, ImageUtils.bytes2Bitmap(iconData));
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "")
                 .setSmallIcon(android.R.drawable.ic_dialog_email)
@@ -182,18 +182,18 @@ public class NotificationService {
 
         if (!disableNotificationReplies) {
 
-            List<Reply> repliesList = loadReplies();
+            String[] repliesList = notificationData.getReplyTitles();
 
             NotificationCompat.WearableExtender wearableExtender = new NotificationCompat.WearableExtender();
-            for (Reply reply : repliesList) {
+            for (String reply : repliesList) {
                 intent.setPackage(context.getPackageName());
                 intent.setAction(Constants.INTENT_ACTION_REPLY);
-                intent.putExtra(Constants.EXTRA_REPLY, reply.getValue());
+                intent.putExtra(Constants.EXTRA_REPLY, reply);
                 intent.putExtra(Constants.EXTRA_NOTIFICATION_KEY, notificationData.getKey());
                 intent.putExtra(Constants.EXTRA_NOTIFICATION_ID, notificationData.getId());
                 PendingIntent replyIntent = PendingIntent.getBroadcast(context, (int) System.currentTimeMillis(), intent, PendingIntent.FLAG_ONE_SHOT);
 
-                NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(android.R.drawable.ic_input_add, reply.getValue(), replyIntent).build();
+                NotificationCompat.Action replyAction = new NotificationCompat.Action.Builder(null, reply, replyIntent).build();
                 wearableExtender.addAction(replyAction);
             }
 

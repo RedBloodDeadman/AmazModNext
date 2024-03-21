@@ -2,19 +2,21 @@ package com.amazmod.service.adapters;
 
 import android.content.Context;
 import android.support.wearable.view.WearableListView;
+import android.support.wearable.view.WearableRecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.amazmod.service.R;
 import com.amazmod.service.support.AppInfo;
 
 import java.util.List;
 
-public class LauncherAppAdapter extends WearableListView.Adapter {
+public class LauncherAppAdapter extends WearableRecyclerView.Adapter<WearableRecyclerView.ViewHolder> {
     private final List<AppInfo> items;
     private final LayoutInflater mInflater;
 
@@ -24,12 +26,12 @@ public class LauncherAppAdapter extends WearableListView.Adapter {
     }
 
     @Override
-    public @NonNull WearableListView.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+    public @NonNull WearableRecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
         return new ItemViewHolder(mInflater.inflate(R.layout.row_app_launcher, null));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull WearableListView.ViewHolder viewHolder, int position) {
+    public void onBindViewHolder(@NonNull WearableRecyclerView.ViewHolder viewHolder, int position) {
         //System.out.println("MenuListAdapter onBindViewHodler position: " + position);
         ItemViewHolder itemViewHolder = (ItemViewHolder) viewHolder;
         final AppInfo item = items.get(position);

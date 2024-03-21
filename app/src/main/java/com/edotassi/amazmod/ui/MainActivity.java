@@ -13,6 +13,7 @@ import android.provider.Settings;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -34,6 +35,7 @@ import com.edotassi.amazmod.ui.fragment.HeartRateChartFragment;
 import com.edotassi.amazmod.ui.fragment.SilencedApplicationsFragment;
 import com.edotassi.amazmod.ui.fragment.WatchInfoFragment;
 import com.edotassi.amazmod.ui.fragment.WeatherFragment;
+import com.edotassi.amazmod.util.Permissions;
 import com.edotassi.amazmod.util.Screen;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
@@ -61,6 +63,8 @@ public class MainActivity extends BaseAppCompatActivity
     private WeatherFragment weatherFragment = new WeatherFragment();
     private SilencedApplicationsFragment silencedApplicationsFragment = new SilencedApplicationsFragment();
     public static boolean systemThemeIsDark = false;
+
+    public static int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE= 2323;
 
     private List<Card> cards = new ArrayList<Card>() {{
         add(batteryChartFragment);
@@ -186,6 +190,32 @@ public class MainActivity extends BaseAppCompatActivity
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, Constants.REQUEST_CODE_BLUETOOTH);
         }
+
+        checkOverlayPermission();
+    }
+
+    public void checkOverlayPermission() {
+        if (!Permissions.checkOverlayPermission(this)) {
+            Snackbar.make(findViewById(android.R.id.content), "Allow AmazMod to launch applications from the background. This will allow you to launch them from a notification on your watch.", Snackbar.LENGTH_LONG)
+                    .setAction("Open", view -> {
+                        if ("xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
+                            Intent localIntent = new Intent("miui.intent.action.APP_PERM_EDITOR");
+                            localIntent.setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity");
+                            localIntent.putExtra("extra_pkgname", getPackageName());
+                            startActivity(localIntent);
+
+                            Toast toast = Toast.makeText(this, "Allow start in background",Toast.LENGTH_LONG);
+                            toast.show();
+                            Toast toast2 = Toast.makeText(this, "Allow overlay",Toast.LENGTH_LONG);
+                            toast2.show();
+                        }else{
+                            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:" + getPackageName()));
+                            startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        }
     }
 
     private void setupCards() {
@@ -230,6 +260,10 @@ public class MainActivity extends BaseAppCompatActivity
                         .apply();
                 //User cancelled the intro so we'll finish this activity too.
                 finish();
+            }
+        }
+        if (requestCode == ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE) {
+            if (Settings.canDrawOverlays(this)) {
             }
         }
     }

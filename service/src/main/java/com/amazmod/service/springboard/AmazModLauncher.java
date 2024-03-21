@@ -22,7 +22,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.support.wearable.view.CircledImageView;
-import android.support.wearable.view.WearableListView;
+import android.support.wearable.view.WearableRecyclerView;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -71,14 +71,14 @@ import static android.content.Context.VIBRATOR_SERVICE;
 public class AmazModLauncher extends AbstractPlugin {
 
     private Context mContext;
-    private View view, appmenu, home;
+    private View view;
     private boolean isActive = false;
     private ISpringBoardHostStub host = null;
 
     private WidgetSettings widgetSettings;
 
-    private WearableListView listView;
-    private TextView battValueTV, unreadMessages, mHeader;
+    private WearableRecyclerView listView;
+    private TextView battValueTV, unreadMessages;
     private ImageView battIconImg;
     private CircledImageView keepAwake, wifiToggle;
 
@@ -99,6 +99,7 @@ public class AmazModLauncher extends AbstractPlugin {
 
     private static final String MANAGE_APPS = "App Manager";
     private static final String MANAGE_FILES = "File Manager";
+    private static final String REMOTE_PHOTO = "Remote Photo";
     private static final String MENU_ENTRY = "MENU ENTRY";
     private static final String[] HIDDEN_APPS = {   "amazmod",
                                                     "touchone",
@@ -162,7 +163,6 @@ public class AmazModLauncher extends AbstractPlugin {
         final CircledImageView settings = view.findViewById(R.id.launcher_setting_04);
         final CircledImageView messages = view.findViewById(R.id.launcher_messages);
 
-        mHeader = view.findViewById(R.id.launcher_header);
         wifiToggle = view.findViewById(R.id.launcher_setting_01);
         keepAwake = view.findViewById(R.id.launcher_setting_02);
         battValueTV = view.findViewById(R.id.launcher_batt_value);
@@ -170,11 +170,7 @@ public class AmazModLauncher extends AbstractPlugin {
         battIconImg = view.findViewById(R.id.launcher_batt_icon);
         listView = view.findViewById(R.id.launcher_listview);
 
-        //home = view.findViewById(R.id.launcher_home);
-        appmenu = view.findViewById(R.id.launcher_appmenu);
-
         version.setText(String.valueOf(BuildConfig.VERSION_CODE));
-        mHeader.setText(mContext.getResources().getString(R.string.apps));
         flashLight.setImageResource(R.drawable.baseline_highlight_white_24);
         settings.setImageResource(R.drawable.outline_settings_white_24);
         messages.setImageResource(R.drawable.notify_icon_24);
@@ -204,30 +200,6 @@ public class AmazModLauncher extends AbstractPlugin {
                 Intent.FLAG_ACTIVITY_NEW_DOCUMENT |
                 Intent.FLAG_ACTIVITY_CLEAR_TOP |
                 Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-
-        /* Disabled
-        home.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mContext.startActivity(launcherIntent);
-            }
-        });
-        */
-
-        appmenu.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (widgetSettings.get(Constants.PREF_AMAZMOD_KEEP_WIDGET, true)) {
-                    Intent appList = new Intent("com.huami.watch.launcher.EXTERNAL_COMMAND.TO_APPLIST");
-                    mContext.sendBroadcast(appList);
-                } else {
-                    final Intent launcherIntent;
-                    launcherIntent = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
-                    launcherIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    mContext.startActivity(launcherIntent);
-                }
-            }
-        });
 
         settings.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -317,16 +289,6 @@ public class AmazModLauncher extends AbstractPlugin {
             public void onClick(View v) {
                 intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.INFO);
                 mContext.startActivity(intent);
-            }
-        });
-
-        mHeader.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                Toast.makeText(mContext, mContext.getResources().getString(R.string.reloading_apps), Toast.LENGTH_SHORT).show();
-                widgetSettings.set(Constants.PREF_HIDDEN_APPS, "[]");
-                loadApps(false);
-                return true;
             }
         });
 
@@ -469,8 +431,9 @@ public class AmazModLauncher extends AbstractPlugin {
         Logger.trace("AmazModLauncher loadApps");
 
         loadHiddenApps(updateHiddenApps);
-        final Drawable appsDrawable = mContext.getResources().getDrawable(R.drawable.ic_action_select_all);
+        final Drawable appsDrawable = mContext.getResources().getDrawable(R.drawable.baseline_apps_24);
         final Drawable filesDrawable = mContext.getResources().getDrawable(R.drawable.outline_folder_white_24);
+        final Drawable photoDrawable = mContext.getResources().getDrawable(R.drawable.ic_remote_camera);
 
         Flowable.fromCallable(new Callable<List<AppInfo>>() {
             @Override
@@ -490,6 +453,8 @@ public class AmazModLauncher extends AbstractPlugin {
                 }
 
                 sortAppInfo(appInfoList);
+                //AppInfo takePhoto = new AppInfo(REMOTE_PHOTO, "", MENU_ENTRY, "0", photoDrawable);
+                //appInfoList.add(takePhoto);
                 AppInfo appInfo = new AppInfo(MANAGE_FILES, "", MENU_ENTRY, "0", filesDrawable);
                 appInfoList.add(appInfo);
                 appInfo = new AppInfo(MANAGE_APPS, "", MENU_ENTRY, "0", appsDrawable);
@@ -516,8 +481,7 @@ public class AmazModLauncher extends AbstractPlugin {
                 });
 
         listView.setLongClickable(true);
-        listView.setGreedyTouchMode(true);
-        listView.addOnScrollListener(mOnScrollListener);
+        //listView.setGreedyTouchMode(true);
     }
 
     private boolean isHiddenApp(String packageName) {
@@ -622,21 +586,18 @@ public class AmazModLauncher extends AbstractPlugin {
         Toast.makeText(mContext, mContext.getResources().getString(R.string.opening)+ " " + name, Toast.LENGTH_SHORT).show();
 
         if (MANAGE_APPS.equals(appInfoList.get(itemChosen).getAppName()) && MENU_ENTRY.equals(version)) {
-
             intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.APPS);
             mContext.startActivity(intent);
-
         } else if (MANAGE_FILES.equals(appInfoList.get(itemChosen).getAppName()) && MENU_ENTRY.equals(version)) {
-
             intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.FILES);
             mContext.startActivity(intent);
-
+        } else if (REMOTE_PHOTO.equals(appInfoList.get(itemChosen).getAppName()) && MENU_ENTRY.equals(version)) {
+            intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.CAMERA);
+            mContext.startActivity(intent);
         } else {
-
             Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(appInfoList.get(itemChosen).getPackageName());
             if (launchIntent != null)
                 mContext.startActivity(launchIntent);
-
         }
 
     }
@@ -659,8 +620,11 @@ public class AmazModLauncher extends AbstractPlugin {
             //refreshList();
             appInfoList.remove(itemChosen);
             mAdapter.notifyDataSetChanged();
+        } else if (MANAGE_APPS.equals(name)){
+            Toast.makeText(mContext, mContext.getResources().getString(R.string.reloading_apps), Toast.LENGTH_SHORT).show();
+            widgetSettings.set(Constants.PREF_HIDDEN_APPS, "[]");
+            loadApps(false);
         }
-
     }
 
     private void loadHiddenApps(boolean update) {
@@ -693,35 +657,6 @@ public class AmazModLauncher extends AbstractPlugin {
             }
         }
     }
-
-    // The following code ensures that the title scrolls as the user scrolls up
-    // or down the list
-    private WearableListView.OnScrollListener mOnScrollListener =
-            new WearableListView.OnScrollListener() {
-                @Override
-                public void onAbsoluteScrollChange(int i) {
-                    // Only scroll the title up from its original base position
-                    // and not down.
-                    if (i > 0) {
-                        mHeader.setY(-i);
-                    }
-                }
-
-                @Override
-                public void onScroll(int i) {
-                    // Placeholder
-                }
-
-                @Override
-                public void onScrollStateChanged(int i) {
-                    // Placeholder
-                }
-
-                @Override
-                public void onCentralPositionChanged(int i) {
-                    // Placeholder
-                }
-            };
 
     /*
      * Below there are standard widget methods
@@ -764,12 +699,14 @@ public class AmazModLauncher extends AbstractPlugin {
     @Override
     public void onActive(Bundle paramBundle) {
         super.onActive(paramBundle);
+        Logger.info("AmazModLauncher onActive");
         this.onShow();
     }
 
     @Override
     public void onResume() {
         super.onResume();
+        Logger.info("AmazModLauncher onResume");
         this.onShow();
     }
 

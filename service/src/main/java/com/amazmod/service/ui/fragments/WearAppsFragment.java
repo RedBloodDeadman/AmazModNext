@@ -16,7 +16,6 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.RemoteException;
 import android.provider.Settings;
 import android.support.wearable.view.WearableListView;
 import android.text.format.Formatter;
@@ -34,6 +33,7 @@ import android.widget.Toast;
 import com.amazmod.service.R;
 import com.amazmod.service.adapters.AppInfoAdapter;
 import com.amazmod.service.events.incoming.RevokeAdminOwner;
+import com.amazmod.service.helper.RecyclerTouchListener;
 import com.amazmod.service.support.AppInfo;
 import com.amazmod.service.util.ExecCommand;
 import com.huami.watch.transport.DataBundle;
@@ -60,14 +60,14 @@ import static com.amazmod.service.Constants.LONG_KEY_SETTINGS;
 import static com.amazmod.service.util.SystemProperties.isStratos;
 import static com.amazmod.service.util.SystemProperties.isStratos3;
 
-public class WearAppsFragment extends Fragment implements WearableListView.ClickListener {
+public class WearAppsFragment extends Fragment {
 
     private View infoView;
     private ScrollView scrollView;
 
     private RelativeLayout wearAppsFrameLayout;
-	private WearableListView listView;
-	private Button buttonClose, buttonClear, buttonUninstall, buttonQuickLaunch;
+    private WearableListView listView;
+    private Button buttonClose, buttonClear, buttonUninstall, buttonQuickLaunch;
     private TextView mHeader, appName, appPackage, appVersion, appSize;
     private ImageView appIcon;
     private ProgressBar progressBar;
@@ -126,31 +126,29 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
         super.onDestroy();
     }
 
-    @Override
     public void onTopEmptyRegionClick() {
         //Prevent NullPointerException
         //Toast.makeText(this, "Top empty area tapped", Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    public void onClick(WearableListView.ViewHolder viewHolder) {
-
-        final int itemChosen = viewHolder.getPosition();
-        Logger.info("WearAppsFragment onClick itemChosen: " + itemChosen);
-        if (appInfoList.get(itemChosen).getAppName().equals(getResources().getString(R.string.refresh))) {
-
-            appInfoList.clear();
-            mAdapter.clear();
+    private void onItemClick(int position) {
+        if (appInfoList.get(position).getAppName().equals(getResources().getString(R.string.refresh))) {
             wearAppsFrameLayout.setVisibility(View.GONE);
             listView.setVisibility(View.GONE);
             progressBar.setVisibility(View.GONE);
             loadApps();
+        } else {
+            AppInfo appInfo = appInfoList.get(position);
+            Toast.makeText(mContext, mContext.getResources().getString(R.string.opening) + " " + appInfo.getAppName(), Toast.LENGTH_SHORT).show();
+            Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(appInfo.getPackageName());
+            if (launchIntent != null)
+                mContext.startActivity(launchIntent);
+        }
+    }
 
-        } else
-            showAppInfo(itemChosen);
-
+    public void onItemLongClick(int position) {
+        showAppInfo(position);
         //Toast.makeText(mContext, "Selected: " + appInfoList.get(itemChosen).getAppName(), Toast.LENGTH_SHORT).show();
-
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -190,43 +188,51 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
         final Drawable drawable = getResources().getDrawable(R.drawable.outline_refresh_white_24);
 
         Flowable.fromCallable(new Callable<List<AppInfo>>() {
-            @Override
-            public List<AppInfo> call() {
-                Logger.info("WearAppsFragment loadApps call");
-                List<PackageInfo> packageInfoList = mContext.getPackageManager().getInstalledPackages(0);
+                    @Override
+                    public List<AppInfo> call() {
+                        Logger.info("WearAppsFragment loadApps call");
+                        List<PackageInfo> packageInfoList = mContext.getPackageManager().getInstalledPackages(0);
 
-                List<AppInfo> appInfoList = new ArrayList<>();
+                        List<AppInfo> appInfoList = new ArrayList<>();
 
-                for (PackageInfo packageInfo : packageInfoList) {
+                        for (PackageInfo packageInfo : packageInfoList) {
 
-                    boolean isSystemApp = (packageInfo.applicationInfo.flags & (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP | ApplicationInfo.FLAG_SYSTEM)) > 0;
-                    if  (!isSystemApp) {
-                        AppInfo appInfo = createAppInfo(packageInfo);
-                        appInfoList.add(appInfo);
+                            boolean isSystemApp = (packageInfo.applicationInfo.flags & (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP | ApplicationInfo.FLAG_SYSTEM)) > 0;
+                            if (!isSystemApp) {
+                                AppInfo appInfo = createAppInfo(packageInfo);
+                                appInfoList.add(appInfo);
+                            }
+                        }
+
+                        sortAppInfo(appInfoList);
+                        AppInfo close = new AppInfo(getResources().getString(R.string.refresh), getString(R.string.reload_apps), "", "0", drawable);
+                        appInfoList.add(close);
+                        return appInfoList;
                     }
-                }
-
-                sortAppInfo(appInfoList);
-                AppInfo close = new AppInfo(getResources().getString(R.string.refresh), getString(R.string.reload_apps), "", "0", drawable);
-                appInfoList.add(close);
-                WearAppsFragment.this.appInfoList = appInfoList;
-                return appInfoList;
-            }
-        }).subscribeOn(Schedulers.computation())
+                }).subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.single())
                 .subscribe(new Consumer<List<AppInfo>>() {
                     @Override
-                    public void accept(final List<AppInfo> appInfoList) {
+                    public void accept(final List<AppInfo> newAppInfoList) {
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 Logger.info("WearAppsFragment loadApps run");
+                                if (appInfoList!=null) {
+                                    appInfoList.clear();
+                                    appInfoList.addAll(newAppInfoList);
+                                }else{
+                                    appInfoList = newAppInfoList;
+                                }
+
                                 mAdapter = new AppInfoAdapter(mContext, appInfoList);
+                                listView.setAdapter(mAdapter);
+
                                 if (appInfoList.isEmpty())
                                     mHeader.setText(getResources().getString(R.string.empty));
                                 else
                                     mHeader.setText(getResources().getString(R.string.user_apps));
-                                listView.setAdapter(mAdapter);
+
                                 listView.post(new Runnable() {
                                     public void run() {
                                         Logger.debug("WearAppsFragment loadApps scrollToTop");
@@ -245,7 +251,19 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
         listView.setLongClickable(true);
         listView.setGreedyTouchMode(true);
         listView.addOnScrollListener(mOnScrollListener);
-        listView.setClickListener(this);
+        listView.addOnItemTouchListener(new RecyclerTouchListener(mContext, listView, new RecyclerTouchListener.ClickListener() {
+            @Override
+            public void onClick(View view, int position) {
+                Logger.debug("WearFilesFragment addOnItemTouchListener onClick");
+                onItemClick(position);
+            }
+
+            @Override
+            public void onLongClick(View view, int position) {
+                Logger.debug("WearFilesFragment addOnItemTouchListener onLongClick");
+                onItemLongClick(position);
+            }
+        }));
     }
 
     private void showAppInfo(final int itemChosen) {
@@ -298,7 +316,7 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
         });
 
         // Check if app is in the quick launch list
-        if((isStratos || isStratos3) && quickLaunchApk.contains(pkgName)) {
+        if ((isStratos || isStratos3) && quickLaunchApk.contains(pkgName)) {
             // Enable quick launch button
             buttonQuickLaunch.setVisibility(View.VISIBLE);
             buttonQuickLaunch.setOnClickListener(new View.OnClickListener() {
@@ -308,7 +326,7 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
                     quickLaunchPackage(mContext, pkgName);
                 }
             });
-        }else{
+        } else {
             // Disable launch button
             buttonQuickLaunch.setVisibility(View.GONE);
         }
@@ -318,7 +336,7 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
         infoView.setVisibility(View.VISIBLE);
     }
 
-    private void hideAppInfo(){
+    private void hideAppInfo() {
         infoView.setVisibility(View.GONE);
         wearAppsFrameLayout.setVisibility(View.VISIBLE);
         listView.setVisibility(View.VISIBLE);
@@ -388,7 +406,7 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
                     });
         } catch (Exception ex) {
             appInfo.setSize("Unknown Size");
-            Logger.error(ex,"WearAppsFragment createAppInfo exception: {}", ex.getMessage());
+            Logger.error(ex, "WearAppsFragment createAppInfo exception: {}", ex.getMessage());
         }
 
         return appInfo;
@@ -477,7 +495,8 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
                 .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         new ExecCommand(ExecCommand.ADB, command);
-                    }})
+                    }
+                })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 
@@ -510,7 +529,8 @@ public class WearAppsFragment extends Fragment implements WearableListView.Click
                         // Save quick launch command
                         Settings.System.putString(context.getContentResolver(), LONG_KEY_SETTINGS, command);
                         Toast.makeText(mContext, mContext.getResources().getString(R.string.quick_launch_description), Toast.LENGTH_SHORT).show();
-                    }})
+                    }
+                })
                 .setNegativeButton(android.R.string.no, null).show();
     }
 

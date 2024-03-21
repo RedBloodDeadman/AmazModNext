@@ -113,7 +113,7 @@
     <string name="pref_enable_notifications_when_screen_on_summary">Forward notifications to watch, when screen is ON.</string>
     <string name="pref_enable_notifications_when_screen_on">Send when screen is ON</string>
     <string name="pref_notifications_enable_custom_ui">Custom UI Notifications</string>
-    <string name="pref_notifications_enable_custom_ui_summary">Notifications with the ability to reply.</string>
+    <string name="pref_notifications_enable_custom_ui_summary">Notifications with the ability to reply and actions.</string>
     <string name="pref_enable_maps_notification">Maps notifications</string>
     <string name="pref_enable_maps_notification_summary">Enable Google Maps notifications.</string>
     <string name="pref_notification_enable_sound">Notifications sound</string>
@@ -510,4 +510,9 @@ follow the system theme (beta).</string>
     <string name="searchpreference_clear_history">Clear history</string>
     <string name="searchpreference_no_results">No results</string>
     <string name="enable_sleep">Enable Sleep As Android</string>
+    <string name="notifications_service_channel">Notifications service</string>
+    <string name="transport_service_channel">Transport service</string>
+    <string name="data_transfer_method">Data transfer method</string>
+    <string name="data_transfer_method_descr">Data transfer method for uploading, downloading files, installing APK and Watchfaces.\nNote: WiFi transmission is more stable when the watch and phone are on the same network. WiFi method does not work with VPN enabled.</string>
+    <string name="apk_install_started_continue">Continue installation on the watch.</string>
 </resources>

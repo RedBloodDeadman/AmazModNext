@@ -124,14 +124,18 @@ public class LauncherWearGridActivity extends Activity {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        //Logger.debug("LauncherWearGridActivity dispatchTouchEvent");
-        findViewById(R.id.activity_launcher_wear_root_layout).dispatchTouchEvent(event);
-        if (NOTIFICATIONS_FROM_WATCHFACE == mode)
-            startTimerFinish();
+        try {
+            //Logger.debug("LauncherWearGridActivity dispatchTouchEvent");
+            rootLayout.dispatchTouchEvent(event);
+            if (NOTIFICATIONS_FROM_WATCHFACE == mode)
+                startTimerFinish();
+        } catch (IllegalArgumentException e) {
+            Logger.error(e.toString());
+        }
         return false;
     }
 
-    private void setGrid(char mode){
+    private void setGrid(char mode) {
 
         clearBackStack();
         final ArrayList<Fragment> fragList = new ArrayList<>();
@@ -204,13 +208,13 @@ public class LauncherWearGridActivity extends Activity {
         FragmentManager manager = this.getFragmentManager();
         if (manager.getBackStackEntryCount() > 0) {
             Logger.warn("LauncherWearGridActivity ***** clearBackStack getBackStackEntryCount: " + manager.getBackStackEntryCount());
-            while (manager.getBackStackEntryCount() > 0){
+            while (manager.getBackStackEntryCount() > 0) {
                 manager.popBackStackImmediate();
             }
         }
     }
 
-    public void setSwipeable(boolean status){
+    public void setSwipeable(boolean status) {
         gridSwipeLayout.setSwipeable(status);
     }
 

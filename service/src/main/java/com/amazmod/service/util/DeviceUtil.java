@@ -1,5 +1,7 @@
 package com.amazmod.service.util;
 
+import static android.content.Context.ACTIVITY_SERVICE;
+
 import android.app.ActivityManager;
 import android.app.KeyguardManager;
 import android.app.PendingIntent;
@@ -40,8 +42,6 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.List;
 
-import static android.content.Context.ACTIVITY_SERVICE;
-
 public class DeviceUtil {
 
     public static boolean isDeviceLocked(Context context) {
@@ -62,7 +62,7 @@ public class DeviceUtil {
                 isLocked = !powerManager.isInteractive();
             }
         } catch (NullPointerException e) {
-            Logger.error(e, "iDeviceLocked exception: {}",  e.getMessage());
+            Logger.error(e, "iDeviceLocked exception: {}", e.getMessage());
             isLocked = false;
         }
 
@@ -100,7 +100,7 @@ public class DeviceUtil {
                     dndEnabled = false;
             }
         } catch (Settings.SettingNotFoundException e) {
-            Logger.error("DnD lowSDK exception: {}",  e.getMessage());
+            Logger.error("DnD lowSDK exception: {}", e.getMessage());
             dndEnabled = false;
         }
 
@@ -236,7 +236,7 @@ public class DeviceUtil {
 
     public static PowerManager.WakeLock installApkAdb(Context context, File apk, boolean isReboot) {
         PowerManager.WakeLock wakeLock = null;
-        if(!apk.exists()){
+        if (!apk.exists()) {
             Logger.error("File not found!");
         } else {
             PackageReceiver.setIsAmazModInstall(true);
@@ -298,7 +298,7 @@ public class DeviceUtil {
                 return file;
             }
 
-            OutputStream output = new FileOutputStream(file);
+            FileOutputStream output = new FileOutputStream(file);
             byte[] buffer = new byte[4 * 1024];
             int read;
             while ((read = inFile.read(buffer)) != -1) {
@@ -334,7 +334,7 @@ public class DeviceUtil {
                 }
 
 
-                OutputStream output = new FileOutputStream(file);
+                FileOutputStream output = new FileOutputStream(file);
                 byte[] buffer = new byte[4 * 1024];
                 int read;
                 while ((read = inFile.read(buffer)) != -1) {
@@ -513,20 +513,20 @@ public class DeviceUtil {
         return Settings.System.getFloat(context.getContentResolver(), name, def);
     }
 
-    public static void centered_toast (Context context, String message) {
+    public static void centered_toast(Context context, String message) {
         Toast toast;
         toast = Toast.makeText(context, message, Toast.LENGTH_SHORT);
         TextView v = toast.getView().findViewById(android.R.id.message);
-        if( v != null) v.setGravity(Gravity.CENTER);
+        if (v != null) v.setGravity(Gravity.CENTER);
         toast.show();
     }
 
     // Based on com.huami.wififtp.manager.FTPUtil
     public static String getLocalIpAddress() {
         try {
-            Enumeration <NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
-            while ( en.hasMoreElements() ) {
-                Enumeration <InetAddress> enumIpAddress = en.nextElement().getInetAddresses();
+            Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
+            while (en.hasMoreElements()) {
+                Enumeration<InetAddress> enumIpAddress = en.nextElement().getInetAddresses();
                 while (enumIpAddress.hasMoreElements()) {
                     InetAddress inetAddress = enumIpAddress.nextElement();
                     if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
@@ -535,7 +535,7 @@ public class DeviceUtil {
                 }
             }
         } catch (SocketException ex) {
-            Logger.debug("getLocalIpAddress IpAddress error "+ ex.toString());
+            Logger.debug("getLocalIpAddress IpAddress error " + ex.toString());
         }
         //return "192.168.43.1"; // default FTP
         return "N/A";
@@ -546,25 +546,30 @@ public class DeviceUtil {
     public static int notificationCounter(Context context) {
         return notificationCounter(context, 0, false, 0);
     }
+
     // Add/Remove notification
     public static int notificationCounter(Context context, int n, String log) {
         Logger.debug(log);
         return notificationCounter(context, n);
     }
+
     public static int notificationCounter(Context context, int n) {
         return notificationCounter(context, n, false, 0);
     }
+
     // Add/Remove notification with delay or not
     public static int notificationCounter(Context context, int n, boolean delay) {
         return notificationCounter(context, n, delay, 0);
     }
+
     // Set notification number
     public static void notificationCounterSet(Context context, int n) {
-        if ( n > 0 )
+        if (n > 0)
             notificationCounter(context, 0, false, n);
         else
             notificationCounter(context, 0, false, -1); // sets counter to 0
     }
+
     // General notifications counter function
     public static int notificationCounter(Context context, int n, boolean delay, int notifications) {
         // Get already saved data
@@ -579,7 +584,7 @@ public class DeviceUtil {
         try {
             // Extract data from JSON
             JSONObject json_data = new JSONObject(data);
-            if( json_data.has("notifications") && notifications == 0 )
+            if (json_data.has("notifications") && notifications == 0)
                 notifications = json_data.getInt("notifications");
         } catch (JSONException e) {
             // Error
@@ -606,10 +611,10 @@ public class DeviceUtil {
         if (data.equals(old_data))
             return notifications;
 
-        if (!delay){
+        if (!delay) {
             // Update system value now
             DeviceUtil.systemPutString(context, Constants.CUSTOM_WATCHFACE_DATA, data);
-        }else{
+        } else {
             // Update system value after 3 seconds
             final String last_data = data;
             Thread t = new Thread() {

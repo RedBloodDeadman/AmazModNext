@@ -1,5 +1,10 @@
 package com.amazmod.service;
 
+import static com.amazmod.service.util.DeviceUtil.getLocalIpAddress;
+import static com.amazmod.service.util.SystemProperties.isStratos3;
+import static amazmod.com.transport.Constants.WIDGETS_LIST_EMPTY_CODE;
+import static amazmod.com.transport.Constants.WIDGETS_LIST_SAVED_CODE;
+
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.app.job.JobInfo;
@@ -31,8 +36,10 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.amazmod.service.db.model.BatteryDbEntity;
 import com.amazmod.service.db.model.BatteryDbEntity_Table;
+import com.amazmod.service.events.ActionNotificationEvent;
 import com.amazmod.service.events.HardwareButtonEvent;
 import com.amazmod.service.events.HourlyChime;
+import com.amazmod.service.events.IntentNotificationEvent;
 import com.amazmod.service.events.NightscoutDataEvent;
 import com.amazmod.service.events.ReplyNotificationEvent;
 import com.amazmod.service.events.SilenceApplicationEvent;
@@ -54,7 +61,7 @@ import com.amazmod.service.events.incoming.Watchface;
 import com.amazmod.service.music.MusicControlInputListener;
 import com.amazmod.service.notifications.NotificationService;
 import com.amazmod.service.receiver.AdminReceiver;
-import com.amazmod.service.receiver.NotificationReplyReceiver;
+import com.amazmod.service.receiver.NotificationReplyAndActionReceiver;
 import com.amazmod.service.settings.SettingsManager;
 import com.amazmod.service.sleep.sleepService;
 import com.amazmod.service.springboard.WidgetSettings;
@@ -70,7 +77,6 @@ import com.amazmod.service.util.SystemProperties;
 import com.amazmod.service.util.WidgetsUtil;
 import com.amazmod.service.weather.Weather;
 import com.huami.watch.notification.data.NotificationKeyData;
-import com.huami.watch.notification.data.StatusBarNotificationData;
 import com.huami.watch.transport.DataBundle;
 import com.huami.watch.transport.DataTransportResult;
 import com.huami.watch.transport.TransportDataItem;
@@ -120,12 +126,7 @@ import amazmod.com.transport.data.SettingsData;
 import amazmod.com.transport.data.WatchStatusData;
 import amazmod.com.transport.data.WatchfaceData;
 import amazmod.com.transport.data.WidgetsData;
-
-import static amazmod.com.transport.Constants.WIDGETS_LIST_EMPTY_CODE;
-import static amazmod.com.transport.Constants.WIDGETS_LIST_SAVED_CODE;
-import static com.amazmod.service.util.DeviceUtil.getLocalIpAddress;
-import static com.amazmod.service.util.FileDataFactory.drawableToBitmap;
-import static com.amazmod.service.util.SystemProperties.isStratos3;
+import amazmod.com.transport.util.ImageUtils;
 
 /**
  * Created by edoardotassinari on 04/04/18.
@@ -150,7 +151,7 @@ public class MainService extends Service implements Transporter.DataListener {
     private static char overlayLauncherPosition;
     private static boolean notificationArrived;
 
-    private static final long BATTERY_SYNC_INTERVAL = 60*60*1000L; //One hour
+    private static final long BATTERY_SYNC_INTERVAL = 60 * 60 * 1000L; //One hour
     private static final int BATTERY_JOB_ID = 0;
 
     private Context context;
@@ -159,7 +160,7 @@ public class MainService extends Service implements Transporter.DataListener {
     private BatteryData batteryData;
     private WatchStatusData watchStatusData;
     private WidgetsData widgetsData;
-    private NotificationReplyReceiver notificationReplyReceiver;
+    private NotificationReplyAndActionReceiver notificationReplyAndActionReceiver;
     private BroadcastReceiver screenOnReceiver;
     private SlptClockClient slptClockClient;
     private ContentObserver phoneConnectionObserver;
@@ -208,7 +209,7 @@ public class MainService extends Service implements Transporter.DataListener {
                     Intent.FLAG_ACTIVITY_NEW_DOCUMENT |
                     Intent.FLAG_ACTIVITY_CLEAR_TOP |
                     Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
-            intent.putExtra("type","phone_connection");
+            intent.putExtra("type", "phone_connection");
             context.startActivity(intent);
             isRunning = false;
         }
@@ -277,10 +278,12 @@ public class MainService extends Service implements Transporter.DataListener {
         }, powerDisconnectedFilter);
 
         // Register notification reply receiver
-        notificationReplyReceiver = new NotificationReplyReceiver();
+        notificationReplyAndActionReceiver = new NotificationReplyAndActionReceiver();
         IntentFilter notificationReplyFilter = new IntentFilter();
         notificationReplyFilter.addAction(Constants.INTENT_ACTION_REPLY);
-        LocalBroadcastManager.getInstance(context).registerReceiver(notificationReplyReceiver, notificationReplyFilter);
+        notificationReplyFilter.addAction(Constants.INTENT_ACTION_ACTION);
+        notificationReplyFilter.addAction(Constants.INTENT_ACTION_INTENT);
+        LocalBroadcastManager.getInstance(context).registerReceiver(notificationReplyAndActionReceiver, notificationReplyFilter);
 
         // Reboot launcher if language was change to update Amazmod widget locale
         if (settings.get(Constants.REQUEST_SELF_RELOAD, true)) {
@@ -301,7 +304,7 @@ public class MainService extends Service implements Transporter.DataListener {
         if (settings.get(Constants.PREF_AMAZMOD_HOURLY_CHIME, false) || (WearMenuFragment.chimeEnabled))
             setHourlyChime(true);
 
-       // Initialize battery alerts
+        // Initialize battery alerts
         this.watchBatteryAlreadyAlerted = false;
         this.phoneBatteryAlreadyAlerted = false;
 
@@ -312,25 +315,25 @@ public class MainService extends Service implements Transporter.DataListener {
         // Amazmod's
         transporterGeneral = TransporterClassic.get(this, Transport.NAME);
         transporterGeneral.addDataListener(this);
-        Logger.debug("MainService onCreate transporterAmazmod "+ (!transporterGeneral.isTransportServiceConnected()?"not connected, connecting...": "already connected") );
+        Logger.debug("MainService onCreate transporterAmazmod " + (!transporterGeneral.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterGeneral.isTransportServiceConnected())
             transporterGeneral.connectTransportService();
         // Amazmod's Notifications
         transporterNotifications = TransporterClassic.get(this, Transport.NAME_NOTIFICATION);
         transporterNotifications.addDataListener(this);
-        Logger.debug("MainService onCreate transporterAmazmodNotification "+ (!transporterNotifications.isTransportServiceConnected()?"not connected, connecting...": "already connected") );
+        Logger.debug("MainService onCreate transporterAmazmodNotification " + (!transporterNotifications.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterNotifications.isTransportServiceConnected())
             transporterNotifications.connectTransportService();
         // Huami's notifications
         transporterHuami = TransporterClassic.get(this, "com.huami.action.notification");
         transporterHuami.addDataListener(this);
-        Logger.debug("MainService onCreate transporterHuamiNotification "+ (!transporterHuami.isTransportServiceConnected()?"not connected, connecting...": "already connected") );
+        Logger.debug("MainService onCreate transporterHuamiNotification " + (!transporterHuami.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterHuami.isTransportServiceConnected())
             transporterHuami.connectTransportService();
         // XDrip data
         transporterXdrip = TransporterClassic.get(this, "com.eveningoutpost.dexdrip.wearintegration");
         transporterXdrip.addDataListener(this);
-        Logger.debug("MainService onCreate transporterXdrip "+ (!transporterXdrip.isTransportServiceConnected()?"not connected, connecting...": "already connected") );
+        Logger.debug("MainService onCreate transporterXdrip " + (!transporterXdrip.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterXdrip.isTransportServiceConnected())
             transporterXdrip.connectTransportService();
         //Sleep as android data
@@ -341,10 +344,12 @@ public class MainService extends Service implements Transporter.DataListener {
         slptClockClient = new SlptClockClient();
         slptClockClient.bindService(this, "AmazMod-MainService", new SlptClockClient.Callback() {
             @Override
-            public void onServiceConnected() {}
+            public void onServiceConnected() {
+            }
 
             @Override
-            public void onServiceDisconnected() {}
+            public void onServiceDisconnected() {
+            }
         });
 
         // Isn't this disabled/removed????? TODO
@@ -360,7 +365,7 @@ public class MainService extends Service implements Transporter.DataListener {
         isSpringboardObserverEnabled = settingsManager.getBoolean(Constants.PREF_AMAZMOD_KEEP_WIDGET, true);
         if (isSpringboardObserverEnabled)
             registerSpringBoardMonitor(true);
-        Logger.debug("MainService isSpringboardObserverEnabled: "+isSpringboardObserverEnabled);
+        Logger.debug("MainService isSpringboardObserverEnabled: " + isSpringboardObserverEnabled);
 
         // Register weather observer
         isWeatherObserverEnabled = settingsManager.getBoolean(Constants.PREF_AMAZMOD_KEEP_WEATHER, true);
@@ -391,9 +396,9 @@ public class MainService extends Service implements Transporter.DataListener {
         EventBus.getDefault().unregister(this);
 
         // Unregister receivers
-        if (notificationReplyReceiver != null) {
-            LocalBroadcastManager.getInstance(context).unregisterReceiver(notificationReplyReceiver);
-            notificationReplyReceiver = null;
+        if (notificationReplyAndActionReceiver != null) {
+            LocalBroadcastManager.getInstance(context).unregisterReceiver(notificationReplyAndActionReceiver);
+            notificationReplyAndActionReceiver = null;
         }
         if (screenOnReceiver != null) {
             context.unregisterReceiver(screenOnReceiver);
@@ -407,7 +412,7 @@ public class MainService extends Service implements Transporter.DataListener {
 
         // Disconnect transporters
         if (transporterGeneral.isTransportServiceConnected()) {
-            Logger.debug( "MainService onDestroy transporterGeneral disconnecting...");
+            Logger.debug("MainService onDestroy transporterGeneral disconnecting...");
             transporterGeneral.disconnectTransportService();
             transporterGeneral = null;
         }
@@ -511,10 +516,9 @@ public class MainService extends Service implements Transporter.DataListener {
         switch (action) {
             case "add": // A notification is added
             case Transport.INCOMING_NOTIFICATION:   // Custom notification added
-                DeviceUtil.notificationCounter(context, 1, true);
                 break;
             case "xDrip_synced_SGV_data": // Xdrip data
-                xdrip( db.getString("Data") );
+                xdrip(db.getString("Data"));
                 break;
             case Transport.LOCAL_IP: // watch's local IP request
                 requestLocalIp();
@@ -527,12 +531,8 @@ public class MainService extends Service implements Transporter.DataListener {
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void deleteNotification(DeleteNotificationEvent deleteNotificationEvent) {
         boolean enableCustomUI = settingsManager.getBoolean(Constants.PREF_NOTIFICATIONS_ENABLE_CUSTOM_UI, false);
-        StatusBarNotificationData statusBarNotificationData = deleteNotificationEvent.getDataBundle().getParcelable("data");
-        String key = statusBarNotificationData.key;
+        String key = deleteNotificationEvent.getDataBundle().getString("key");
         Logger.warn("deleteNotification enableCustomUI: {} \\ key: {}", enableCustomUI, key);
-
-        // Update notification Counter
-        DeviceUtil.notificationCounter(context, -1);
 
         // Check if custom notifications are enabled
         if (!enableCustomUI) return;
@@ -541,7 +541,6 @@ public class MainService extends Service implements Transporter.DataListener {
             if (NotificationStore.getCustomNotificationCount() > 0)
                 for (ArrayMap.Entry<String, String> pair : NotificationStore.keyMap.entrySet()) {
                     //Logger.warn("deleteNotification NS.key: {} \\ NS.entry: {}", pair.getKey(), pair.getValue());
-
                     if (key.equals(pair.getValue())) {
                         Logger.warn("deleteNotification removing: {}", pair.getKey());
                         NotificationStore.removeCustomNotification(pair.getKey(), context);
@@ -574,11 +573,11 @@ public class MainService extends Service implements Transporter.DataListener {
 
         // Logs
         String local_log_tag = "[New phone data] ";
-        Logger.debug(local_log_tag+ " incoming battery data: " + phoneBattery);
-        Logger.debug(local_log_tag+ " incoming alarm data:" + phoneAlarm);
-        Logger.debug(local_log_tag+ " incoming calendar events:" + calendarEvents);
-        Logger.debug(local_log_tag+ " incoming weather data:" + weather_data);
-        Logger.debug(local_log_tag+ " data will expire at:" + expire);
+        Logger.debug(local_log_tag + " incoming battery data: " + phoneBattery);
+        Logger.debug(local_log_tag + " incoming alarm data:" + phoneAlarm);
+        Logger.debug(local_log_tag + " incoming calendar events:" + calendarEvents);
+        Logger.debug(local_log_tag + " incoming weather data:" + weather_data);
+        Logger.debug(local_log_tag + " data will expire at:" + expire);
 
         // Update Time
         long updateTime = Calendar.getInstance().getTimeInMillis();
@@ -600,7 +599,7 @@ public class MainService extends Service implements Transporter.DataListener {
 
             data = json_data.toString();
         } catch (JSONException e) {
-            data = "{\"phoneBattery\":\"" + phoneBattery + "\",\"phoneAlarm\":\"" + phoneAlarm + "\",\"updateTime\":"+updateTime+"}";
+            data = "{\"phoneBattery\":\"" + phoneBattery + "\",\"phoneAlarm\":\"" + phoneAlarm + "\",\"updateTime\":" + updateTime + "}";
         }
         DeviceUtil.systemPutString(context, Constants.CUSTOM_WATCHFACE_DATA, data);
 
@@ -611,12 +610,12 @@ public class MainService extends Service implements Transporter.DataListener {
                 JSONObject json_data = new JSONObject(calendarEvents);
                 json_data.put("updateTime", updateTime);
                 // Update data
-                data =  json_data.toString();
+                data = json_data.toString();
             } catch (JSONException e) {
                 data = "{}";//default
             }
             DeviceUtil.systemPutString(context, "CustomCalendarData", data);
-            Logger.debug(local_log_tag+ " Calendar data were updated.");
+            Logger.debug(local_log_tag + " Calendar data were updated.");
         }
 
         // Weather data
@@ -624,23 +623,23 @@ public class MainService extends Service implements Transporter.DataListener {
             wasWeatherSaved = false; // Default value
             // Update system weather data
             String save_value = Weather.updateWeatherData(context, weather_data);
-            if(!save_value.equals(Weather.DATA_HAVE_NOT_UPDATE)) {
+            if (!save_value.equals(Weather.DATA_HAVE_NOT_UPDATE)) {
                 // Save new data
                 settingsManager.putString(Constants.WEATHER_INFO, save_value);
                 // Save that Amazmod just updated the system value (used when overwriting system weather values)
                 wasWeatherSaved = true;
                 // Save the expiration time (used when overwriting system weather values)
                 custom_weather_expire = expire;
-                Logger.debug(local_log_tag+ " Weather data were updated.");
-            }else{
-                Logger.debug(local_log_tag+ " Weather data were NOT updated.");
+                Logger.debug(local_log_tag + " Weather data were updated.");
+            } else {
+                Logger.debug(local_log_tag + " Weather data were NOT updated.");
             }
         }
 
         // Phone Battery Alert
-        if( settingsManager.getInt(Constants.PREF_BATTERY_PHONE_ALERT, 0) > 0 ){
-            if( settingsManager.getInt(Constants.PREF_BATTERY_PHONE_ALERT, 0) >= phoneBattery ){
-                if(!phoneBatteryAlreadyAlerted) { // Pass only if NOT already alerted
+        if (settingsManager.getInt(Constants.PREF_BATTERY_PHONE_ALERT, 0) > 0) {
+            if (settingsManager.getInt(Constants.PREF_BATTERY_PHONE_ALERT, 0) >= phoneBattery) {
+                if (!phoneBatteryAlreadyAlerted) { // Pass only if NOT already alerted
                     if (isStandardAlertEnabled) {
                         // Show standard battery alert
                         sendStandardAlert("phone_battery");
@@ -656,7 +655,7 @@ public class MainService extends Service implements Transporter.DataListener {
                     }
                     phoneBatteryAlreadyAlerted = true;
                 }
-            }else{
+            } else {
                 // When battery is above the alert level
                 phoneBatteryAlreadyAlerted = false;
             }
@@ -666,7 +665,7 @@ public class MainService extends Service implements Transporter.DataListener {
     // XDrip data
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void xdrip(String xdrip_data) {
-        if(xdrip_data==null || !xdrip_data.equals(""))
+        if (xdrip_data == null || !xdrip_data.equals(""))
             return;
 
         // Try to decode JSON
@@ -730,7 +729,7 @@ public class MainService extends Service implements Transporter.DataListener {
             else
                 strike = "";
              */
-        }catch (Exception e) {
+        } catch (Exception e) {
             // Nothing
         }
     }
@@ -743,14 +742,14 @@ public class MainService extends Service implements Transporter.DataListener {
         String savedOrder = widgetsData.getPackages();
         Logger.debug("MainService requestWidgets widgetsData (got): " + savedOrder);
 
-        if (!savedOrder.isEmpty()){
+        if (!savedOrder.isEmpty()) {
             // Check is EMPTY code
-            if(savedOrder.equals(WIDGETS_LIST_EMPTY_CODE)){
+            if (savedOrder.equals(WIDGETS_LIST_EMPTY_CODE)) {
                 // All widgets are off
                 settingsManager.putString(Constants.PREF_SPRINGBOARD_ORDER, "");
                 //DeviceUtil.systemPutString(context, Constants.WIDGET_ORDER_IN, "");
                 Logger.debug("WidgetsRequest remove PREF_SPRINGBOARD_ORDER");
-            }else{
+            } else {
                 // Save the list here
                 settingsManager.putString(Constants.PREF_SPRINGBOARD_ORDER, savedOrder);
                 DeviceUtil.systemPutString(context, Constants.WIDGET_ORDER_IN, savedOrder);
@@ -759,7 +758,7 @@ public class MainService extends Service implements Transporter.DataListener {
 
             // Send confirmation that data are saved
             widgetsData.setPackages(WIDGETS_LIST_SAVED_CODE);
-        }else {
+        } else {
             // Get widgets list
             JSONArray widgetsList = WidgetsUtil.getWidgetsLists(getApplicationContext(), true);
             // Set up data
@@ -775,10 +774,10 @@ public class MainService extends Service implements Transporter.DataListener {
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void requestLocalIp() {
         String localIP = getLocalIpAddress();
-        Logger.debug("MainService requestLocalIp, local IP: "+localIP);
+        Logger.debug("MainService requestLocalIp, local IP: " + localIP);
         // Send transmit
         DataBundle data = new DataBundle();
-        data.putString("ip",localIP);
+        data.putString("ip", localIP);
         send(Transport.LOCAL_IP, data);
     }
 
@@ -788,7 +787,7 @@ public class MainService extends Service implements Transporter.DataListener {
         count++;
         Logger.debug("MainService lowPower count: " + count);
         if (count < 2) {
-            Toast.makeText(context, getString(R.string.low_power) +": "+ getString(R.string.true_), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, getString(R.string.low_power) + ": " + getString(R.string.true_), Toast.LENGTH_SHORT).show();
             BluetoothAdapter btmgr = BluetoothAdapter.getDefaultAdapter();
             Logger.info("MainService lowPower disable BT");
             btmgr.disable();
@@ -817,7 +816,7 @@ public class MainService extends Service implements Transporter.DataListener {
             }
 
         } else if (count >= 3) {
-            Toast.makeText(context, getString(R.string.low_power) +": "+ getString(R.string.false_), Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, getString(R.string.low_power) + ": " + getString(R.string.false_), Toast.LENGTH_SHORT).show();
             //btmgr.enable();
             //slptClockClient.disableSlpt();
             slptClockClient.disableLowBattery();
@@ -896,12 +895,33 @@ public class MainService extends Service implements Transporter.DataListener {
     // Reply to notification
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void reply(ReplyNotificationEvent event) {
-        Logger.debug("MainService reply to notification, key: " + event.getKey() + ", message: " + event.getMessage());
+        Logger.debug("MainService reply to notification, key: " + event.getSbnId() + ", title: " + event.getTitle() + ", message: " + event.getMessage());
         // Send transmit
         DataBundle dataBundle = new DataBundle();
-        dataBundle.putString("key", event.getKey()); // Notification unique key
+        dataBundle.putInt("id", event.getSbnId()); // Notification unique key
         dataBundle.putString("message", event.getMessage()); // Reply message
+        dataBundle.putString("title", event.getTitle()); // Action title
         send(Transport.REPLY, dataBundle);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void action(ActionNotificationEvent event) {
+        Logger.debug("MainService action to notification, key: " + event.getSbnId() + ", title: " + event.getTitle());
+        // Send transmit
+        DataBundle dataBundle = new DataBundle();
+        dataBundle.putInt("id", event.getSbnId()); // Notification unique key
+        dataBundle.putString("title", event.getTitle()); // Action title
+        send(Transport.ACTION, dataBundle);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void action(IntentNotificationEvent event) {
+        Logger.debug("MainService action to notification, key: " + event.getSbnId() + ", package name: " + event.getPackageName());
+        // Send transmit
+        DataBundle dataBundle = new DataBundle();
+        dataBundle.putInt("id", event.getSbnId()); // Notification unique key
+        dataBundle.putString("packageName", event.getPackageName()); // Intent package name
+        send(Transport.INTENT, dataBundle);
     }
 
     // Silence specific app notifications for X minutes
@@ -969,7 +989,7 @@ public class MainService extends Service implements Transporter.DataListener {
         watchStatusData.setScreenBrightnessMode(bm);
 
         // Check if rooted
-        if( new File("/system/xbin/su").exists() )
+        if (new File("/system/xbin/su").exists())
             watchStatusData.setRooted(1);
 
         // Get last heart rates
@@ -984,18 +1004,18 @@ public class MainService extends Service implements Transporter.DataListener {
                     // Get the field values
                     // example: utc_time=1528485660, time_zone=0, heart_rate=96
                     long utc_time;
-                    utc_time = (cur.getLong(0)) * (isStratos3()?1000:1);
+                    utc_time = (cur.getLong(0)) * (isStratos3() ? 1000 : 1);
                     //int time_zone = cur.getInt(1);
                     int heart_rate = cur.getInt(2);
 
                     heartRates += utc_time + "," + heart_rate + ",";
                 }
-                if(cur != null) cur.close();
+                if (cur != null) cur.close();
             } catch (SecurityException e) {
                 //Getting data error
             }
 
-            if(!heartRates.equals("")) // send only if there are data
+            if (!heartRates.equals("")) // send only if there are data
                 watchStatusData.setLastHeartRates(heartRates);
         }
 
@@ -1003,7 +1023,7 @@ public class MainService extends Service implements Transporter.DataListener {
         settings.reload();
         boolean isHourlyChime = settings.get(Constants.PREF_AMAZMOD_HOURLY_CHIME, false);
         Logger.debug("Sync hourly chime to transport : " + isHourlyChime);
-        if(isHourlyChime) // send only if there are data
+        if (isHourlyChime) // send only if there are data
             watchStatusData.setHourlyChime(1); // 1 = on, 0 = off
 
         // Send transmit
@@ -1108,8 +1128,8 @@ public class MainService extends Service implements Transporter.DataListener {
             resultDeleteFileData.setResult(result);
 
             // If music file is deleted, inform MediaStore's Content Provider
-            if(result == Transport.RESULT_OK)
-                informMediaProvider(file,true);
+            if (result == Transport.RESULT_OK)
+                informMediaProvider(file, true);
         } catch (SecurityException securityException) {
             resultDeleteFileData.setResult(Transport.RESULT_PERMISSION_DENIED);
         } catch (Exception ex) {
@@ -1133,8 +1153,8 @@ public class MainService extends Service implements Transporter.DataListener {
             randomAccessFile.close();
 
             // Check is file transfer has finished (last chunk less than the others)
-            if ( requestUploadFileChunkData.getSize() < requestUploadFileChunkData.getConstantChunkSize() )
-                informMediaProvider(file,false);
+            if (requestUploadFileChunkData.getSize() < requestUploadFileChunkData.getConstantChunkSize())
+                informMediaProvider(file, false);
 
         } catch (Exception ex) {
             Logger.error(ex.getMessage());
@@ -1146,19 +1166,19 @@ public class MainService extends Service implements Transporter.DataListener {
         // todo Music files are not shown in the music app
         // If music file, inform MediaStore's Content Provider
         String filename = file.getName().toLowerCase();
-        if ( filename.endsWith(".mp3") || filename.endsWith(".m4a") ) {
+        if (filename.endsWith(".mp3") || filename.endsWith(".m4a")) {
             Uri uri = Uri.fromFile(file);
             Logger.debug("Music file, informing MediaStore's Content Provider: " + uri);
             try {
                 if (delete) {
                     // File deleted
                     getContentResolver().delete(uri, null, null);
-                }else{
+                } else {
                     // New File
                     sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, uri));
                 }
             } catch (Exception ex) {
-                Logger.warn("Music file, informing MediaStore's Content Provider error: "+ex);
+                Logger.warn("Music file, informing MediaStore's Content Provider error: " + ex);
             }
         }
     }
@@ -1232,7 +1252,7 @@ public class MainService extends Service implements Transporter.DataListener {
                                 errorMsg = String.format("%s" + getString(R.string.not_found), apkFile);
                             }
 
-                        } else if (command.contains("install_amazmod_update ")){
+                        } else if (command.contains("install_amazmod_update ")) {
                             showConfirmationWearActivity(getString(R.string.service_update), "0");
                             DeviceUtil.installPackage(context, getPackageName(), command.replace("install_amazmod_update ", ""));
 
@@ -1437,7 +1457,7 @@ public class MainService extends Service implements Transporter.DataListener {
         ArrayList<FileData> filesData = new ArrayList<>();
         File[] files = directory.listFiles();
 
-        if(files==null)
+        if (files == null)
             return FileDataFactory.directoryFromFile(directory, filesData);
 
         for (File file : files) {
@@ -1649,17 +1669,10 @@ public class MainService extends Service implements Transporter.DataListener {
 
     private void setNotificationIcon(Drawable drawable) {
         try {
-            Bitmap bitmap = drawableToBitmap(drawable);
-            int width = bitmap.getWidth();
-            int height = bitmap.getHeight();
-            int[] intArray = new int[width * height];
-            bitmap.getPixels(intArray, 0, width, 0, 0, width, height);
-
-            notificationData.setIcon(intArray);
-            notificationData.setIconWidth(width);
-            notificationData.setIconHeight(height);
+            Bitmap bitmap = ImageUtils.drawableToBitmap(drawable);
+            notificationData.setIcon(ImageUtils.bitmap2bytes(bitmap, ImageUtils.smallIconQuality));
         } catch (Exception e) {
-            notificationData.setIcon(new int[]{});
+            notificationData.setIcon(new byte[]{});
             Logger.error("MainService sendStandardAlert exception: " + e.toString());
         }
     }
@@ -1671,7 +1684,7 @@ public class MainService extends Service implements Transporter.DataListener {
             PowerManager.WakeLock wakeLockScreenOn = powerManager.newWakeLock(PowerManager.SCREEN_BRIGHT_WAKE_LOCK
                     | PowerManager.ACQUIRE_CAUSES_WAKEUP, "AmazMod::NotificationScreenOn");
             if (!wakeLockScreenOn.isHeld())
-                wakeLockScreenOn.acquire(9*1000L /* 9s */);
+                wakeLockScreenOn.acquire(9 * 1000L /* 9s */);
         } else
             Logger.error("MainService aquireWakelock null powerManager!");
     }
@@ -1717,7 +1730,7 @@ public class MainService extends Service implements Transporter.DataListener {
             Uri setting = Settings.System.getUriFor(Constants.WIDGET_ORDER_IN);
             contentResolver.registerContentObserver(setting, true, springboardObserver);
 
-        // Unregister
+            // Unregister
         } else {
             if (springboardObserver != null)
                 getContentResolver().unregisterContentObserver(springboardObserver);
@@ -1753,20 +1766,20 @@ public class MainService extends Service implements Transporter.DataListener {
                         String weather_data = settingsManager.getString(Constants.WEATHER_INFO, "");
 
                         // Check if data are up-to-date
-                        if(!weather_data.isEmpty() && System.currentTimeMillis()<=custom_weather_expire ){
+                        if (!weather_data.isEmpty() && System.currentTimeMillis() <= custom_weather_expire) {
 
                             // Update system weather data
                             String save_value = Weather.updateWeatherData(context, weather_data);
-                            if(!save_value.equals(Weather.DATA_HAVE_NOT_UPDATE)) {
+                            if (!save_value.equals(Weather.DATA_HAVE_NOT_UPDATE)) {
                                 // Save new data
                                 settingsManager.putString(Constants.WEATHER_INFO, save_value);
                                 // Save that Amazmod just updated the system value (used when overwriting system weather values)
                                 wasWeatherSaved = true;
                                 Logger.debug("[Weather Data Monitor] Weather data were overwritten.");
-                            }else{
+                            } else {
                                 Logger.debug("[Weather Data Monitor]  Weather data were NOT overwritten.");
                             }
-                        }else{
+                        } else {
                             Logger.debug("[Weather Data Monitor]  Weather data were NOT overwritten since saved data have expire.");
                         }
                     } else
@@ -1781,7 +1794,7 @@ public class MainService extends Service implements Transporter.DataListener {
 
             // Observe changes in the WeatherInfo system variable
             ContentResolver contentResolver = getContentResolver();
-            Uri setting = Settings.System.getUriFor( Weather.getWeatherMonitorParameter() );
+            Uri setting = Settings.System.getUriFor(Weather.getWeatherMonitorParameter());
             contentResolver.registerContentObserver(setting, true, weatherObserver);
 
             // Unregister
@@ -1794,7 +1807,7 @@ public class MainService extends Service implements Transporter.DataListener {
         isWeatherObserverEnabled = status;
     }
 
-    private void setOverlayLauncher(boolean status){
+    private void setOverlayLauncher(boolean status) {
         Logger.debug("MainService setOverlayLauncher status: {}", status);
 
         final Intent overlayButton = new Intent(context, OverlayLauncher.class);
@@ -1814,7 +1827,8 @@ public class MainService extends Service implements Transporter.DataListener {
                         context.startService(overlayButton);
                     else if (Intent.ACTION_SCREEN_OFF.equals(action))
                         context.stopService(overlayButton);
-                }};
+                }
+            };
             context.registerReceiver(screenOnReceiver, screenOnFilter);
 
         } else {
@@ -1828,10 +1842,10 @@ public class MainService extends Service implements Transporter.DataListener {
         settings.set(Constants.PREF_AMAZMOD_OVERLAY_LAUNCHER, status);
     }
 
-    public void setHourlyChime(boolean status){
+    public void setHourlyChime(boolean status) {
         Logger.debug("setHourlyChime status: {}", status);
 
-        HourlyChime.setHourlyChime(context,status);
+        HourlyChime.setHourlyChime(context, status);
         WearMenuFragment.chimeEnabled = status;
 
         settings.set(Constants.PREF_AMAZMOD_HOURLY_CHIME, status);

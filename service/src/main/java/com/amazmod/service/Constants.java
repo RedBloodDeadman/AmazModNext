@@ -16,7 +16,11 @@ public class Constants {
     public static final String ACTION_NIGHTSCOUT_SYNC = "nightscout_sync";
 
     public static final String INTENT_ACTION_REPLY = "com.amazmod.action.reply";
+    public static final String INTENT_ACTION_ACTION = "com.amazmod.action.action";
+    public static final String INTENT_ACTION_INTENT = "com.amazmod.action.intent";
     public static final String EXTRA_REPLY = "extra.reply";
+    public static final String EXTRA_ACTION = "extra.action";
+    public static final String EXTRA_PACKAGE = "extra.package";
     public static final String EXTRA_NOTIFICATION_KEY = "extra.notification.key";
     public static final String EXTRA_NOTIFICATION_ID = "extra.notification.id";
 
