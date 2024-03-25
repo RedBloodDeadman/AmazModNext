@@ -324,7 +324,7 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             int px = FragmentUtil.getValueInDP(getActivity(), 72);
             replies_layout.setMinimumHeight(px);
         } else if (SystemProperties.isStratos3()) {
-            int px = FragmentUtil.getValueInDP(getActivity(), 82);
+            int px = FragmentUtil.getValueInDP(getActivity(), 72);
             replies_layout.setMinimumHeight(px);
         }
 
