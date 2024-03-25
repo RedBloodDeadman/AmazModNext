@@ -1,6 +1,4 @@
-[![AmazMod](https://img.shields.io/badge/AmazMod-your%20Amazfit-red.svg)](https://github.com/RedBloodDeadman/AmazMod)
-[![latest service](https://img.shields.io/github/release/AmazMod/AmazMod.svg?label=latest%20release&style=flat)](https://github.com/RedBloodDeadman/AmazMod/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/RedBloodDeadman/AmazMod/total.svg?style=flat)](https://github.com/RedBloodDeadman/AmazMod/releases/latest)
+[![latest service](https://img.shields.io/github/release/RedBloodDeadman/AmazModNext.svg?label=latest%20release&style=flat)](https://github.com/RedBloodDeadman/AmazModNext/releases/latest)
 
 Here is a repository that continues the development of the original project.
 Original project repository: https://github.com/AmazMod/AmazMod
@@ -31,8 +29,8 @@ AmazMod used to be a modified ("modded") Amazfit app, the companion app for Pace
 ### Installation
 
 ###### Download links:
-* Latest AmazMod (for phone): https://github.com/RedBloodDeadman/AmazMod/releases/latest
-* Latest service-release.apk (for watch): https://github.com/RedBloodDeadman/AmazMod/releases/latest
+* Latest AmazMod (for phone): https://github.com/RedBloodDeadman/AmazModNext/releases/latest
+* Latest service-release.apk (for watch): https://github.com/RedBloodDeadman/AmazModNext/releases/latest
 
 ###### Installation steps to use all features
 1. Download and install latest AmazMod on phone;
@@ -69,37 +67,37 @@ Alternatively, you can use the EXE installers provided with each release, that w
 
 First, make sure you do not have Silent (Do not Disturb) mode enabled in both watch and phone. On watch it displays a "moon" icon when watch is unlocked but some custom watchfaces hide the status line so you must chech with the quick settings menu (swipe down form top), then tap the moon icon if it's blue to disable it. If it does not fix the problem, then make sure that AmazMod on phone has granted permissions to access notifications, restart both phone and watch and test notifications again ("standard" and "custom" notification tests from AmazMod app only works if you have service.apk installed on watch). Also keep in mind that you *must* keep stock Amazfit app installed and running on your phone for the current version of AmazMod to work!
 
-For more info, please check the [FAQ](https://github.com/RedBloodDeadman/AmazMod/blob/master/FAQ.md).
+For more info, please check the [FAQ](https://github.com/RedBloodDeadman/AmazModNext/blob/master/FAQ.md).
 
 ### Screenshots
 
 <table>
 	<tr>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_1.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_1.png"/>		
 		</td>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_2.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_2.png"/>		
 		</td>
 				<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_3.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_3.png"/>		
 		</td>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_4.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_4.png"/>		
 		</td>
 	</tr>
 	<tr>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_5.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_5.png"/>		
 		</td>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_6.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_6.png"/>		
 		</td>
 				<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_7.png"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_7.png"/>		
 		</td>
 		<td>
-			<img src="https://github.com/RedBloodDeadman/AmazMod/raw/dev/images/screen_8.jpg"/>		
+			<img src="https://github.com/RedBloodDeadman/AmazModNext/raw/dev/images/screen_8.jpg"/>		
 		</td>
 	</tr>
 </table>
