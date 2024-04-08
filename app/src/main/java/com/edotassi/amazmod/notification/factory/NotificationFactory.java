@@ -128,7 +128,7 @@ public class NotificationFactory {
         //Small Icon
         if (Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_COLORED_ICON, Constants.PREF_NOTIFICATIONS_COLORED_ICON_DEFAULT)) {
             Drawable appIcon = getAppIcon(statusBarNotification.getPackageName(), context);
-            byte[] smallIcon = ImageUtils.bitmap2bytes(ImageUtils.drawableToBitmap(appIcon), ImageUtils.smallIconQuality);
+            byte[] smallIcon = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(appIcon), ImageUtils.smallIconQuality);
             notificationData.setIcon(smallIcon);
             Logger.debug("Small icon size WebP: " + FilesUtil.formatBytes(smallIcon.length));
         } else {
@@ -136,7 +136,7 @@ public class NotificationFactory {
                 if (statusBarNotification.getNotification().getSmallIcon() != null
                         && statusBarNotification.getNotification().getSmallIcon().loadDrawable(context) != null) {
                     Bitmap bm = ImageUtils.drawableToBitmap(statusBarNotification.getNotification().getSmallIcon().loadDrawable(context));
-                    byte[] smallIcon = ImageUtils.bitmap2bytes(bm, ImageUtils.smallIconQuality);
+                    byte[] smallIcon = ImageUtils.bitmap2bytesWebp(bm, ImageUtils.smallIconQuality);
                     notificationData.setIcon(smallIcon);
                     Logger.debug("Small icon size WebP: " + FilesUtil.formatBytes(smallIcon.length));
                 }
@@ -225,7 +225,7 @@ public class NotificationFactory {
                         viewImage.draw(canvas);
                         bitmap = Bitmap.createScaledBitmap(bitmap, 48, 48, true);
 
-                        notificationData.setIcon(ImageUtils.bitmap2bytes(bitmap, ImageUtils.smallIconQuality));
+                        notificationData.setIcon(ImageUtils.bitmap2bytesWebp(bitmap, ImageUtils.smallIconQuality));
                     } catch (Exception e) {
                         notificationData.setIcon(new byte[]{});
                         Logger.error(e, "failed to get bitmap with exception: {}", e.getMessage());

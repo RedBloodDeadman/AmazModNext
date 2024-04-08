@@ -154,113 +154,129 @@ public class NotificationService extends NotificationListenerService {
         super.onDestroy();
     }
 
-    @Override
-    public void onNotificationPosted(StatusBarNotification statusBarNotification) {
-
-        String notificationPackage = statusBarNotification.getPackageName();
-
-        String notificationTxt = "";
+    private String getSbnCustomKey(StatusBarNotification statusBarNotification) {
+        String key = statusBarNotification.getKey();
+        key += statusBarNotification.getNotification().when;
         CharSequence charSequence = statusBarNotification.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT);
         if (charSequence != null) {
-            notificationTxt = charSequence.toString();
+            key += charSequence.toString();
         }
+        return key;
+    }
 
-        if (!isPackageAllowed(notificationPackage)) {
-            //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_PACKAGE));
-            Logger.debug("[Notification Blocked] Notifications from {} are blocked.", notificationPackage);
-            checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_PACKAGE);
-            return;
-        } else if (isPackageSilenced(notificationPackage)) {
-            //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_SILENCE));
-            Logger.debug("[Notification Blocked] Notifications from {} are currently silenced.", notificationPackage);
-            checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SILENCE);
-            return;
-        } else if (isPackageFiltered(statusBarNotification)) {
-            //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_TEXT));
-            Logger.debug("[Notification Blocked] Notifications from {} was blocked because of content filters.", notificationPackage);
-            checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_TEXT);
-            return;
-        } else if (isNotificationsDisabled()) {
-            Logger.debug("[Notification Blocked] All notifications are disabled (disabled, DND, Driving etc). {}", notificationPackage);
-            checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_NOTIFICATIONS_DISABLED);
-            return;
-        } else if (isNotificationsDisabledWhenScreenOn()) {
-            if (!Screen.isDeviceLocked(this)) {
-                Logger.debug("[Notification Blocked] Device is unlocked. {}", notificationPackage);
-                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SCREENON);
-                return;
-            } else if (!isNotificationsEnabledWhenScreenLocked()) {
-                Logger.debug("[Notification Blocked] Device is in lock-screen. {}", notificationPackage);
-                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SCREENLOCKED);
-                return;
+    private String sbnCustomKeyLast = "";
+    @Override
+    public void onNotificationPosted(StatusBarNotification statusBarNotification) {
+        String sbnCustomKey = getSbnCustomKey(statusBarNotification);
+        Logger.debug("sbnCustomKey: " + sbnCustomKey);
+        if (!sbnCustomKey.equals(sbnCustomKeyLast)) {
+            sbnCustomKeyLast = sbnCustomKey;
+
+            String notificationPackage = statusBarNotification.getPackageName();
+
+            String notificationTxt = "";
+            CharSequence charSequence = statusBarNotification.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT);
+            if (charSequence != null) {
+                notificationTxt = charSequence.toString();
             }
-        }
 
-        Logger.debug("[New Notification] Notification is posted: " + statusBarNotification.getKey());
-
-        byte filterResult = filter(statusBarNotification);
-
-        Logger.debug("[New Notification] pkg: {}, filterResult: {}", notificationPackage, ((char) (byte) filterResult));
-
-        // Logger.debug("Filters: U=" + (filterResult == Constants.FILTER_UNGROUP) +" C="+ (filterResult == Constants.FILTER_CONTINUE) +" K="+ (filterResult == Constants.FILTER_LOCALOK) );
-        if (filterResult == Constants.FILTER_CONTINUE || filterResult == Constants.FILTER_UNGROUP || filterResult == Constants.FILTER_LOCALOK) {
-
-            StatusBarNotification sbn = null;
-
-            // Check if notification is in group
-            if (filterResult == Constants.FILTER_UNGROUP && Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_ENABLE_UNGROUP, false)) {
-                //Logger.debug("NotificationService onNotificationPosted ungroup01 key: " + statusBarNotification.getKey() + " \\ id: " + statusBarNotification.getId());
-                int nextId = statusBarNotification.getId() + newUID();
-                sbn = new StatusBarNotification(notificationPackage, "", nextId,
-                        statusBarNotification.getTag(), 0, 0, 0,
-                        statusBarNotification.getNotification(), statusBarNotification.getUser(),
-                        statusBarNotification.getPostTime());
-
-                if (grouped_notifications.containsKey(statusBarNotification.getId())) {
-                    //Logger.debug("NotificationService onNotificationPosted ungroup02 id exists: " + statusBarNotification.getId() + " \\ nextId: " + nextId);
-                    // Get array
-                    int[] grouped = grouped_notifications.get(statusBarNotification.getId());
-                    // Define the new array
-                    if (grouped != null) {
-                        int[] newArray = new int[grouped.length + 1];
-                        // Copy values into new array
-                        System.arraycopy(grouped, 0, newArray, 0, grouped.length);
-                        newArray[newArray.length - 1] = nextId;
-                        grouped_notifications.put(statusBarNotification.getId(), newArray);
-                        //Logger.debug("NotificationService onNotificationPosted ungroup03 id exists newArray: " + Arrays.toString(newArray));
-                    } else
-                        Logger.error("grouped: could not create array");
-                } else {
-                    //Logger.debug("NotificationService onNotificationPosted ungroup04 new id: " + statusBarNotification.getId() + " \\ nextId: " + nextId);
-                    // New in array
-                    grouped_notifications.put(statusBarNotification.getId(), new int[]{nextId});
+            if (!isPackageAllowed(notificationPackage)) {
+                //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_PACKAGE));
+                Logger.debug("[Notification Blocked] Notifications from {} are blocked.", notificationPackage);
+                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_PACKAGE);
+                return;
+            } else if (isPackageSilenced(notificationPackage)) {
+                //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_SILENCE));
+                Logger.debug("[Notification Blocked] Notifications from {} are currently silenced.", notificationPackage);
+                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SILENCE);
+                return;
+            } else if (isPackageFiltered(statusBarNotification)) {
+                //Logger.debug("onNotificationPosted blocked: " + notificationPackage + " / " + ((char) (byte) Constants.FILTER_TEXT));
+                Logger.debug("[Notification Blocked] Notifications from {} was blocked because of content filters.", notificationPackage);
+                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_TEXT);
+                return;
+            } else if (isNotificationsDisabled()) {
+                Logger.debug("[Notification Blocked] All notifications are disabled (disabled, DND, Driving etc). {}", notificationPackage);
+                checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_NOTIFICATIONS_DISABLED);
+                return;
+            } else if (isNotificationsDisabledWhenScreenOn()) {
+                if (!Screen.isDeviceLocked(this)) {
+                    Logger.debug("[Notification Blocked] Device is unlocked. {}", notificationPackage);
+                    checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SCREENON);
+                    return;
+                } else if (!isNotificationsEnabledWhenScreenLocked()) {
+                    Logger.debug("[Notification Blocked] Device is in lock-screen. {}", notificationPackage);
+                    checkAndLog(notificationPackage, notificationTxt, Constants.FILTER_SCREENLOCKED);
+                    return;
                 }
             }
 
-            if (sbn == null)
-                sbn = statusBarNotification;
+            Logger.debug("[New Notification] Notification is posted: " + statusBarNotification.getKey());
 
-            // Select between Standard UI and Custom UI notifications
-            if (isCustomUIEnabled())
-                sendNotificationWithCustomUI(filterResult, sbn);
-            else
-                sendNotificationWithStandardUI(filterResult, sbn);
+            byte filterResult = filter(statusBarNotification);
 
-            //Logger.debug("onNotificationPosted sent: " + notificationPackage + " / " + ((char) (byte) filterResult));
-            storeForStats(notificationPackage, filterResult);
+            Logger.debug("[New Notification] pkg: {}, filterResult: {}", notificationPackage, ((char) (byte) filterResult));
 
-        } else {
-            if (isRingingNotification(filterResult, notificationPackage)) { // Messenger voice call notifications
-                Logger.debug("[Ringing Notification] New notifications is a ringing notification: " + ((char) (byte) filterResult));
-                handleCall(statusBarNotification, notificationPackage);
+            // Logger.debug("Filters: U=" + (filterResult == Constants.FILTER_UNGROUP) +" C="+ (filterResult == Constants.FILTER_CONTINUE) +" K="+ (filterResult == Constants.FILTER_LOCALOK) );
+            if (filterResult == Constants.FILTER_CONTINUE || filterResult == Constants.FILTER_UNGROUP || filterResult == Constants.FILTER_LOCALOK) {
 
-            } else if (isMapsNotification(filterResult, notificationPackage)) { // Maps notification
-                Logger.debug("[Maps Notification] New notifications is a MapsNotification: " + ((char) (byte) filterResult));
-                mapNotification(statusBarNotification);
+                StatusBarNotification sbn = null;
 
-            } else { // Blocked
-                Logger.debug("[New Notification] New notifications is blocked. (pkg: {}, marked as: {})", notificationPackage, ((char) (byte) filterResult));
-                checkAndLog(notificationPackage, notificationTxt, filterResult);
+                // Check if notification is in group
+                if (filterResult == Constants.FILTER_UNGROUP && Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_ENABLE_UNGROUP, false)) {
+                    //Logger.debug("NotificationService onNotificationPosted ungroup01 key: " + statusBarNotification.getKey() + " \\ id: " + statusBarNotification.getId());
+                    int nextId = statusBarNotification.getId() + newUID();
+                    sbn = new StatusBarNotification(notificationPackage, "", nextId,
+                            statusBarNotification.getTag(), 0, 0, 0,
+                            statusBarNotification.getNotification(), statusBarNotification.getUser(),
+                            statusBarNotification.getPostTime());
+
+                    if (grouped_notifications.containsKey(statusBarNotification.getId())) {
+                        //Logger.debug("NotificationService onNotificationPosted ungroup02 id exists: " + statusBarNotification.getId() + " \\ nextId: " + nextId);
+                        // Get array
+                        int[] grouped = grouped_notifications.get(statusBarNotification.getId());
+                        // Define the new array
+                        if (grouped != null) {
+                            int[] newArray = new int[grouped.length + 1];
+                            // Copy values into new array
+                            System.arraycopy(grouped, 0, newArray, 0, grouped.length);
+                            newArray[newArray.length - 1] = nextId;
+                            grouped_notifications.put(statusBarNotification.getId(), newArray);
+                            //Logger.debug("NotificationService onNotificationPosted ungroup03 id exists newArray: " + Arrays.toString(newArray));
+                        } else
+                            Logger.error("grouped: could not create array");
+                    } else {
+                        //Logger.debug("NotificationService onNotificationPosted ungroup04 new id: " + statusBarNotification.getId() + " \\ nextId: " + nextId);
+                        // New in array
+                        grouped_notifications.put(statusBarNotification.getId(), new int[]{nextId});
+                    }
+                }
+
+                if (sbn == null)
+                    sbn = statusBarNotification;
+
+                // Select between Standard UI and Custom UI notifications
+                if (isCustomUIEnabled())
+                    sendNotificationWithCustomUI(filterResult, sbn);
+                else
+                    sendNotificationWithStandardUI(filterResult, sbn);
+
+                //Logger.debug("onNotificationPosted sent: " + notificationPackage + " / " + ((char) (byte) filterResult));
+                storeForStats(notificationPackage, filterResult);
+
+            } else {
+                if (isRingingNotification(filterResult, notificationPackage)) { // Messenger voice call notifications
+                    Logger.debug("[Ringing Notification] New notifications is a ringing notification: " + ((char) (byte) filterResult));
+                    handleCall(statusBarNotification, notificationPackage);
+
+                } else if (isMapsNotification(filterResult, notificationPackage)) { // Maps notification
+                    Logger.debug("[Maps Notification] New notifications is a MapsNotification: " + ((char) (byte) filterResult));
+                    mapNotification(statusBarNotification);
+
+                } else { // Blocked
+                    Logger.debug("[New Notification] New notifications is blocked. (pkg: {}, marked as: {})", notificationPackage, ((char) (byte) filterResult));
+                    checkAndLog(notificationPackage, notificationTxt, filterResult);
+                }
             }
         }
     }

@@ -276,8 +276,13 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Button button = new Button(getActivity());
             button.setLayoutParams(layoutParams);
             TypedValue outValue = new TypedValue();
-            getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
-            button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
+            if (enableInvertedTheme){
+                getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_light_gray, outValue, true);
+                button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_light_gray));
+            }else {
+                getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
+                button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
+            }
             button.setText(mAction);
             button.setTextColor(getResources().getColor(R.color.white));
 
@@ -292,8 +297,13 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Button button = new Button(getActivity());
             button.setLayoutParams(layoutParams);
             TypedValue outValue = new TypedValue();
-            getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
-            button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
+            if (enableInvertedTheme){
+                getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_light_gray, outValue, true);
+                button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_light_gray));
+            }else {
+                getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
+                button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
+            }
             button.setText(replyAction);
             button.setTextColor(getResources().getColor(R.color.white));
 

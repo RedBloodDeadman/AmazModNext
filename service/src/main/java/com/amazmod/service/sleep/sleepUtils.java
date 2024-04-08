@@ -57,7 +57,7 @@ public class sleepUtils {
 
         // Get and set icon
         Drawable drawable = context.getResources().getDrawable(R.drawable.ic_sleepasandroid);
-        notificationData.setIcon(ImageUtils.bitmap2bytes(ImageUtils.drawableToBitmap(drawable), ImageUtils.smallIconQuality));
+        notificationData.setIcon(ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(drawable), ImageUtils.smallIconQuality));
 
         notificationService.post(notificationData);
     }

@@ -222,7 +222,8 @@
                     app:circle_border_color="@color/light_grey"
                     app:circle_border_width="2dp"
                     app:circle_color="@android:color/transparent"
-                    app:circle_radius="@dimen/big_circle_radius_launcher" />
+                    app:circle_radius="@dimen/big_circle_radius_launcher"
+                    app:circle_radius_pressed="@dimen/small_circle_radius_launcher"/>
 
             </LinearLayout>
         </LinearLayout>

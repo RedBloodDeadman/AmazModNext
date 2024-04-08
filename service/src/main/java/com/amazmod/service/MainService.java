@@ -1670,7 +1670,7 @@ public class MainService extends Service implements Transporter.DataListener {
     private void setNotificationIcon(Drawable drawable) {
         try {
             Bitmap bitmap = ImageUtils.drawableToBitmap(drawable);
-            notificationData.setIcon(ImageUtils.bitmap2bytes(bitmap, ImageUtils.smallIconQuality));
+            notificationData.setIcon(ImageUtils.bitmap2bytesWebp(bitmap, ImageUtils.smallIconQuality));
         } catch (Exception e) {
             notificationData.setIcon(new byte[]{});
             Logger.error("MainService sendStandardAlert exception: " + e.toString());

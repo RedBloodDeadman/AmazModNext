@@ -9,9 +9,9 @@ import android.graphics.drawable.Drawable;
 import java.io.ByteArrayOutputStream;
 
 public class ImageUtils {
-    public static int smallIconQuality = 80;
-    public static int largeIconQuality = 15;
-    public static int bigPictureQuality = 15;
+    public static int smallIconQuality = 1;
+    public static int largeIconQuality = 1;
+    public static int bigPictureQuality = 1;
 
     public static byte[] bitmap2bytes(Bitmap bitmap, int quality) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();

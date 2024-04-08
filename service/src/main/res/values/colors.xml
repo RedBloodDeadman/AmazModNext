@@ -13,4 +13,5 @@
     <color name="colorGraph">#eeeeee</color>
     <color name="colorCharging">#00E676</color>
     <color name="colorPrediction">#e6000f</color>
+    <color name="dark_gray">#4F4F4F</color>
 </resources>
