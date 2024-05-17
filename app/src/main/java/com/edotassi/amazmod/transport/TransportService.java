@@ -14,7 +14,6 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.ArrayMap;
 import androidx.preference.PreferenceManager;
@@ -107,6 +106,10 @@ public class TransportService extends Service implements Transporter.DataListene
     private static Transporter.DataListener internetListener;
 
     int numCores = Runtime.getRuntime().availableProcessors();
+
+    public final int connectionAttemptsCount = 3;
+    public final int connectionTimeoutSec = 5;
+
     ThreadPoolExecutor executor = new ThreadPoolExecutor(1, numCores * 1,
             60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 
@@ -448,31 +451,36 @@ public class TransportService extends Service implements Transporter.DataListene
     }
 
     public <T> Task<T> sendWithResult(final String action, final String[] actionResults, final DataBundle dataBundle, char transporter) {
-        final TaskCompletionSource<T> taskCompletionSource = new TaskCompletionSource<>();
-        Logger.trace("sendWithResult action: {}", action);
+        return sendWithResult(action, actionResults, dataBundle, transporter, 0, connectionTimeoutSec);
+    }
 
+    public <T> Task<T> sendWithResult(final String action, final String[] actionResults, final DataBundle dataBundle, char transporter, int currentAttempt, int timeout) {
+        final TaskCompletionSource<T> taskCompletionSource = new TaskCompletionSource<>();
+        Logger.trace("sendWithResult current attempt: {}", (currentAttempt + 1) + "/" + connectionAttemptsCount);
+        Logger.trace("sendWithResult action: {}", action);
         Tasks.call(executor, new Callable<Object>() {
             @Override
             public Object call() throws Exception {
                 Logger.trace("Sending data with action {} with result action: {}", action, Arrays.toString(actionResults));
-                for (String actionResult: actionResults) {
+                for (String actionResult : actionResults) {
                     if (!pendingResults.containsKey(actionResult)) {
                         pendingResults.put(actionResult, taskCompletionSource);
-                    }else{
+                    } else {
                         pendingResults.replace(actionResult, taskCompletionSource);
                     }
                 }
-
                 send(transporter, action, dataBundle, null);
-
                 try {
                     Logger.trace("Data with action {} were send. Waiting for reply...", action);
-                    Tasks.await(taskCompletionSource.getTask(), 60000, TimeUnit.MILLISECONDS);
+                    Tasks.await(taskCompletionSource.getTask(), timeout, TimeUnit.SECONDS);
                 } catch (TimeoutException timeoutException) {
-                    taskCompletionSource.setException(timeoutException);
-                    Logger.error(timeoutException, timeoutException.getMessage());
+                    if (currentAttempt < connectionAttemptsCount - 1) {
+                        return sendWithResult(action, actionResults, dataBundle, transporter, currentAttempt + 1, timeout);
+                    } else {
+                        taskCompletionSource.setException(timeoutException);
+                        Logger.error(timeoutException, timeoutException.getMessage());
+                    }
                 }
-
                 Logger.trace("sendWithResult return");
                 return null;
             }

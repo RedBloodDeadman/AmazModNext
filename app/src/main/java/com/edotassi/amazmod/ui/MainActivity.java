@@ -2,6 +2,7 @@ package com.edotassi.amazmod.ui;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -64,7 +65,7 @@ public class MainActivity extends BaseAppCompatActivity
     private SilencedApplicationsFragment silencedApplicationsFragment = new SilencedApplicationsFragment();
     public static boolean systemThemeIsDark = false;
 
-    public static int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE= 2323;
+    public static int ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE = 2323;
 
     private List<Card> cards = new ArrayList<Card>() {{
         add(batteryChartFragment);
@@ -141,6 +142,8 @@ public class MainActivity extends BaseAppCompatActivity
             //Start Wizard Activity
             Intent intent = new Intent(MainActivity.this, MainIntroActivity.class);
             startActivityForResult(intent, Constants.REQUEST_CODE_INTRO);
+
+            checkOverlayPermission();
         }
 
         setupCards();
@@ -186,32 +189,36 @@ public class MainActivity extends BaseAppCompatActivity
         }
 
         // Ask to enable bluetooth if not enabled
-        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()){
+        if (!BluetoothAdapter.getDefaultAdapter().isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, Constants.REQUEST_CODE_BLUETOOTH);
         }
-
-        checkOverlayPermission();
     }
 
     public void checkOverlayPermission() {
         if (!Permissions.checkOverlayPermission(this)) {
             Snackbar.make(findViewById(android.R.id.content), "Allow AmazMod to launch applications from the background. This will allow you to launch them from a notification on your watch.", Snackbar.LENGTH_LONG)
                     .setAction("Open", view -> {
-                        if ("xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
-                            Intent localIntent = new Intent("miui.intent.action.APP_PERM_EDITOR");
-                            localIntent.setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity");
-                            localIntent.putExtra("extra_pkgname", getPackageName());
-                            startActivity(localIntent);
+                        try {
+                            if ("xiaomi".equalsIgnoreCase(Build.MANUFACTURER)) {
+                                Intent localIntent = new Intent("miui.intent.action.APP_PERM_EDITOR");
+                                localIntent.setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity");
+                                localIntent.putExtra("extra_pkgname", getPackageName());
+                                startActivity(localIntent);
 
-                            Toast toast = Toast.makeText(this, "Allow start in background",Toast.LENGTH_LONG);
-                            toast.show();
-                            Toast toast2 = Toast.makeText(this, "Allow overlay",Toast.LENGTH_LONG);
-                            toast2.show();
-                        }else{
-                            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                    Uri.parse("package:" + getPackageName()));
-                            startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
+                                Toast toast = Toast.makeText(this, "Allow start in background", Toast.LENGTH_LONG);
+                                toast.show();
+                                Toast toast2 = Toast.makeText(this, "Allow overlay", Toast.LENGTH_LONG);
+                                toast2.show();
+                            } else {
+                                Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                        Uri.parse("package:" + getPackageName()));
+                                startActivityForResult(intent, ACTION_MANAGE_OVERLAY_PERMISSION_REQUEST_CODE);
+                            }
+                        } catch (ActivityNotFoundException e) {
+                            PreferenceManager.getDefaultSharedPreferences(this).edit()
+                                    .putBoolean(Constants.PREF_KEY_FIRST_START, false)
+                                    .apply();
                         }
                     })
                     .show();

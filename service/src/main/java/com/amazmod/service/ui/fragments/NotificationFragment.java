@@ -276,10 +276,10 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Button button = new Button(getActivity());
             button.setLayoutParams(layoutParams);
             TypedValue outValue = new TypedValue();
-            if (enableInvertedTheme){
+            if (enableInvertedTheme) {
                 getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_light_gray, outValue, true);
                 button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_light_gray));
-            }else {
+            } else {
                 getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
                 button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
             }
@@ -297,10 +297,10 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Button button = new Button(getActivity());
             button.setLayoutParams(layoutParams);
             TypedValue outValue = new TypedValue();
-            if (enableInvertedTheme){
+            if (enableInvertedTheme) {
                 getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_light_gray, outValue, true);
                 button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_light_gray));
-            }else {
+            } else {
                 getActivity().getTheme().resolveAttribute(R.drawable.wear_button_rect_gray, outValue, true);
                 button.setBackgroundDrawable(getResources().getDrawable(R.drawable.wear_button_rect_gray));
             }
@@ -749,7 +749,7 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
             try {
                 if (vibrator != null) {
-                    vibrator.vibrate(duration);
+                    vibrator.vibrate(new long[]{duration / 2, duration / 2}, 2);
                 }
             } catch (RuntimeException ex) {
                 Logger.error(ex, ex.getMessage());
