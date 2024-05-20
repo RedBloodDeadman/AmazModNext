@@ -27,12 +27,7 @@ public class GridViewPagerAdapter extends FragmentGridPagerAdapter {
         //RepliesFragment replies = RepliesFragment.newInstance(bundle);
         //NotificationFragment frag = new NotificationFragment();
 
-        Fragment[] i = new Fragment[ items.size() ];
-        items.toArray( i );
-
-        Row row = new Row(i);
-        //row.addBackground(context.getResources().getDrawable(R.drawable.bg1));
-        mRows.add(row);
+        setItems(items);
 
         //row = new Row(CardFragment.create("Row 2", "Page 1"), CardFragment.create("Row 2", "Page 2"), CardFragment.create("Row 2", "Page 3"));
         //row.addBackgrounds(context.getResources().getDrawable(R.drawable.bg2),context.getResources().getDrawable(R.drawable.bg3));
@@ -40,10 +35,18 @@ public class GridViewPagerAdapter extends FragmentGridPagerAdapter {
 
     }
 
+    public void setItems(List<Fragment> items) {
+        Fragment[] i = new Fragment[items.size()];
+        items.toArray(i);
+
+        Row row = new Row(i);
+        //row.addBackground(context.getResources().getDrawable(R.drawable.bg1));
+        mRows.add(row);
+    }
+
     @Override
     public Fragment getFragment(int rowIndex, int columnIndex) {
         Row row = mRows.get(rowIndex);
-
         return row.getColumn(columnIndex);
     }
 
@@ -59,7 +62,7 @@ public class GridViewPagerAdapter extends FragmentGridPagerAdapter {
 
     @Override
     public Drawable getBackgroundForRow(int row) {
-        if(mRows.get(row).getBackgrounds()==null || mRows.get(row).getBackgrounds().isEmpty()){
+        if (mRows.get(row).getBackgrounds() == null || mRows.get(row).getBackgrounds().isEmpty()) {
             return super.getBackgroundForRow(row);
         }
 
@@ -68,10 +71,10 @@ public class GridViewPagerAdapter extends FragmentGridPagerAdapter {
 
     @Override
     public Drawable getBackgroundForPage(int row, int column) {
-        if(mRows.get(row).getBackgrounds()==null || column> mRows.get(row).getBackgrounds().size()-1){
-            return super.getBackgroundForPage(row,column);
+        if (mRows.get(row).getBackgrounds() == null || column > mRows.get(row).getBackgrounds().size() - 1) {
+            return super.getBackgroundForPage(row, column);
         }
-
-        return mRows.get(row).getBackground(column);    }
+        return mRows.get(row).getBackground(column);
+    }
 
 }

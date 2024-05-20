@@ -7,7 +7,6 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Handler;
@@ -749,7 +748,7 @@ public class NotificationFragment extends Fragment implements DelayedConfirmatio
             Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
             try {
                 if (vibrator != null) {
-                    vibrator.vibrate(new long[]{duration / 2, duration / 2}, 2);
+                    vibrator.vibrate(duration);
                 }
             } catch (RuntimeException ex) {
                 Logger.error(ex, ex.getMessage());

@@ -6,10 +6,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-
-import android.widget.TextView;
 
 import com.amazmod.service.R;
 import com.amazmod.service.support.AppInfo;

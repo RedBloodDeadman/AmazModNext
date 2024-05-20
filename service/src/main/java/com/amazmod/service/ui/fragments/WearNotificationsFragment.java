@@ -104,6 +104,9 @@ public class WearNotificationsFragment extends Fragment {
 //            notificationInfoList.clear();
 //            mAdapter.clear();
             loadNotifications();
+        } else {
+            progressBar.setVisibility(View.GONE);
+            listView.setVisibility(View.VISIBLE);
         }
     }
 
@@ -131,6 +134,8 @@ public class WearNotificationsFragment extends Fragment {
         if (getResources().getString(R.string.refresh).equals(notificationInfoList.get(position).getNotificationTitle())) {
             mAdapter = null;
             notificationInfoList.clear();
+            listView.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
             loadNotifications();
 
         } else if (getResources().getString(R.string.clear).equals(notificationInfoList.get(position).getNotificationTitle())) {
@@ -188,6 +193,8 @@ public class WearNotificationsFragment extends Fragment {
         mHeader.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                listView.setVisibility(View.GONE);
+                progressBar.setVisibility(View.VISIBLE);
                 updateNotificationsList();
             }
 
@@ -225,8 +232,6 @@ public class WearNotificationsFragment extends Fragment {
             return;
 
         wearNotificationsFrameLayout.setVisibility(View.VISIBLE);
-        listView.setVisibility(View.GONE);
-        progressBar.setVisibility(View.VISIBLE);
 
         final Drawable drawable = mContext.getResources().getDrawable(R.drawable.outline_refresh_white_24);
         final Drawable clear = mContext.getResources().getDrawable(R.drawable.outline_clear_all_white_24);
