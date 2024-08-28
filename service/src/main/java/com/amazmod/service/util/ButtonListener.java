@@ -10,10 +10,15 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static android.content.Context.POWER_SERVICE;
+
+import androidx.annotation.NonNull;
+
+import com.huami.watch.util.Log;
 
 public class ButtonListener {
 
@@ -30,9 +35,8 @@ public class ButtonListener {
     private final int KEY_EVENT_UP = 0;
     private final int KEY_EVENT_PRESS = 1;
 
-    private final int TRIGGER = 600;
-    private final int LONG_TRIGGER = TRIGGER * 6;
-    private final int LONG_TRIGGER_MAX = TRIGGER * 10;
+    private final int TRIGGER = 300;
+    private final int LONG_TRIGGER = TRIGGER * 3;
 
     private PowerManager powerManager;
     PowerManager.WakeLock wakeLock;
@@ -40,9 +44,11 @@ public class ButtonListener {
     private boolean listening;
 
     Thread thread;
+    Thread threadLongPress;
+    Timer longPressTimer = new Timer();
 
     public void start(Context context, final KeyEventListener keyEventListener) {
-        if(listening)
+        if (listening)
             return;
 
         powerManager = (PowerManager) context.getSystemService(POWER_SERVICE);
@@ -65,8 +71,9 @@ public class ButtonListener {
             wakeLock.release();
     }
 
-    private class listenerThread extends Thread{
+    private class listenerThread extends Thread {
         private String FILE_PATH;
+        boolean longButtonPressFlag = true;
 
         private LinkedHashMap<Integer, Long> lastEvents = new LinkedHashMap<Integer, Long>() {{
             put(KEY_UP, (long) 0);
@@ -77,8 +84,8 @@ public class ButtonListener {
 
         private KeyEventListener KeyEventListener;
 
-        private listenerThread(KeyEventListener keyEventListener){
-            if(SystemProperties.isStratos3())
+        private listenerThread(KeyEventListener keyEventListener) {
+            if (SystemProperties.isStratos3())
                 FILE_PATH = "/dev/input/event1";
             else
                 FILE_PATH = "/dev/input/event2";
@@ -86,23 +93,18 @@ public class ButtonListener {
             KeyEventListener = keyEventListener;
         }
 
-        public void run(){
+        public void run() {
             File file = new File(FILE_PATH);
 
             try {
                 FileInputStream fileInputStream = new FileInputStream(file);
 
                 while (true) {
-                    if(Thread.currentThread().isInterrupted()){
+                    if (Thread.currentThread().isInterrupted()) {
                         fileInputStream.close();
                         break;
                     }
-                    byte[] buffer = new byte[24];
-                    fileInputStream.read(buffer, 0, 24);
-
-                    ByteBuffer byteBuffer = ByteBuffer.allocateDirect(24);
-                    byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
-                    byteBuffer.put(buffer);
+                    ByteBuffer byteBuffer = getByteBuffer(fileInputStream);
 
                     int timeS = byteBuffer.getInt(0);
                     int timeMS = byteBuffer.getInt(4);
@@ -117,14 +119,30 @@ public class ButtonListener {
 
                     long lastKeyDown = lastEvents.get((int) code);
 
+                    TimerTask timerTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            if (longButtonPressFlag) {
+                                Log.d("Button Listener", "TimerTask isAlive: " + isAlive());
+                                Log.d("Button Listener", "TimerTask isInterrupted: " + isInterrupted());
+                                KeyEventListener.onKeyPress(new KeyEvent(code, true));
+                            }
+                        }
+                    };
+
                     if (value == KEY_EVENT_UP) {
+                        longButtonPressFlag = false;
+                        Log.d("Button Listener", "KEY_EVENT_UP");
                         long delta = now - lastKeyDown;
-                        if ((delta > TRIGGER) && (delta < LONG_TRIGGER))
-                            KeyEventListener.onKeyPress(new KeyEvent(code, true));
-                        else if (delta < TRIGGER)
+                        if (delta < TRIGGER) {
                             KeyEventListener.onKeyPress(new KeyEvent(code, false));
-                    } else if (value == KEY_EVENT_PRESS)
+                        }
+                    } else if (value == KEY_EVENT_PRESS) {
+                        Log.d("Button Listener", "KEY_EVENT_PRESS");
                         lastKeyDown = now;
+                        longButtonPressFlag = true;
+                        restartTimer(timerTask);
+                    }
 
                     lastEvents.put((int) code, lastKeyDown);
                 }
@@ -134,23 +152,42 @@ public class ButtonListener {
         }
     }
 
+    private void restartTimer(TimerTask timerTask) {
+        longPressTimer.cancel();
+        longPressTimer.purge();
+        longPressTimer = new Timer();
+        longPressTimer.schedule(timerTask, LONG_TRIGGER);
+    }
+
+    @NonNull
+    private static ByteBuffer getByteBuffer(FileInputStream fileInputStream) throws IOException {
+        byte[] buffer = new byte[24];
+        fileInputStream.read(buffer, 0, 24);
+
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(24);
+        byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        byteBuffer.put(buffer);
+        return byteBuffer;
+    }
+
     public interface KeyEventListener {
         void onKeyPress(KeyEvent keyEvent);
     }
 
-    public static class KeyEvent{
+    public static class KeyEvent {
         private int code;
         private boolean longPress;
-        private KeyEvent(int code, boolean isLongPress){
+
+        private KeyEvent(int code, boolean isLongPress) {
             this.code = code;
             this.longPress = isLongPress;
         }
 
-        public int getCode(){
+        public int getCode() {
             return code;
         }
 
-        public boolean isLongPress(){
+        public boolean isLongPress() {
             return longPress;
         }
     }

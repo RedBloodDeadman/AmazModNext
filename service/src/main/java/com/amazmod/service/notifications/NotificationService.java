@@ -7,7 +7,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.os.Vibrator;
 
@@ -19,7 +18,6 @@ import com.amazmod.service.settings.SettingsManager;
 import com.amazmod.service.sleep.sleepConstants;
 import com.amazmod.service.support.NotificationStore;
 import com.amazmod.service.ui.NotificationWearActivity;
-import com.amazmod.service.ui.fragments.NotificationFragment;
 import com.amazmod.service.util.DeviceUtil;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -99,7 +97,9 @@ public class NotificationService {
 
         // Handles test notifications
         if (key.contains("amazmod|test|99")) {
-            if (notificationSpec.getText().equals("Test Notification")) {
+            Logger.debug("Received test notification: " + notificationSpec.getTitle());
+            if (notificationSpec.getText().contains("Lorem ipsum")) {
+                Logger.debug("NotificationService0 notificationSpec.getKey(): " + key);
                 if (forceCustom) {
                     Logger.debug("NotificationService1 notificationSpec.getKey(): " + key);
                     NotificationStore.addCustomNotification(notificationStoreKey, notificationSpec, context);
@@ -122,7 +122,7 @@ public class NotificationService {
             Logger.debug("NotificationService6 notificationSpec.getKey(): " + key);
             if (enableCustomUI || forceCustom) {
                 NotificationStore.addCustomNotification(notificationStoreKey , notificationSpec, context);
-                if (NotificationFragment.keyboardIsEnable) {
+                if (NotificationWearActivity.keyboardIsEnable) {
                     final Vibrator mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
                     if (mVibrator != null) {
                         mVibrator.vibrate(400);

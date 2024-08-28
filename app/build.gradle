@@ -108,7 +108,7 @@ dependencies {
     implementation 'com.google.firebase:firebase-core:17.4.3'
     implementation 'io.reactivex.rxjava2:rxjava:2.2.6'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-    implementation 'com.pixplicity.easyprefs:library:1.9.0'
+    implementation 'com.pixplicity.easyprefs:EasyPrefs:1.10.0'
     implementation 'me.zhanghai.android.materialprogressbar:library:1.6.1'
     implementation 'com.github.MFlisar:changelog:1.1.5'
     implementation 'com.afollestad.material-dialogs:core:0.9.6.0'
@@ -120,13 +120,13 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.10'
     implementation 'commons-io:commons-io:2.7' //It show a fake new version
     implementation 'com.squareup.okhttp3:okhttp:4.7.2'
-    implementation 'com.mindorks.android:prdownloader:0.4.0'
+    implementation 'com.github.amitshekhariitbhu:PRDownloader:1.0.1'
     implementation 'org.mnode.ical4j:ical4j:2.2.3'
     implementation 'org.slf4j:slf4j-simple:1.7.30'
     implementation "org.tinylog:tinylog-api:${tinylog_version}"
     implementation "org.tinylog:tinylog-api-kotlin:${tinylog_version}"
     implementation "org.tinylog:tinylog-impl:${tinylog_version}"
-    implementation 'com.android.volley:volley:1.1.0'
+    implementation 'com.android.volley:volley:1.2.1'
     implementation 'commons-net:commons-net:3.6' //It show a fake new version
     implementation 'com.android.billingclient:billing:2.2.1'
     implementation 'com.squareup.picasso:picasso:2.71828'

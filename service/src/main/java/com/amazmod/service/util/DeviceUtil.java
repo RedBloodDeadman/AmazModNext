@@ -100,7 +100,7 @@ public class DeviceUtil {
                     dndEnabled = false;
             }
         } catch (Settings.SettingNotFoundException e) {
-            Logger.error("DnD lowSDK exception: {}", e.getMessage());
+            Logger.warn("DnD lowSDK exception: {}", e.getMessage());
             dndEnabled = false;
         }
 

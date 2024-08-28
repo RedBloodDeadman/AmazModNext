@@ -100,7 +100,9 @@ class AboutActivity : BaseAppCompatActivity(), DataTransportResultCallback {
 
     private fun sendTestMessage(type: Char) {
         val notificationData = NotificationData()
-        notificationData.text = "Test Notification"
+        notificationData.text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut tristique metus nisi. Nam eu porta ante. Mauris quis elit dolor. Mauris non porta odio, eget sodales nisl. Integer sed arcu ac purus pellentesque dictum. Suspendisse dignissim lorem nulla, ut tempor ex tincidunt imperdiet. Mauris tincidunt nulla turpis, in tempor felis semper vitae. Sed tincidunt pharetra ultrices.\n" +
+                "\n" +
+                "Nulla imperdiet enim sit amet sem accumsan malesuada. In hac habitasse platea dictumst. Vestibulum semper ornare purus, in elementum quam tincidunt nec. Praesent ipsum lorem, suscipit vel imperdiet in, pharetra eu urna. Sed a ante tristique, varius risus in, aliquet velit. Praesent in dui tincidunt augue consequat aliquam in eget orci. In luctus ut eros eget aliquet. Aliquam dictum purus eu efficitur pulvinar. Curabitur vehicula congue purus. Duis eget ultrices arcu. Duis enim purus, congue at mi et, faucibus tincidunt magna. In urna felis, euismod sit amet commodo sit amet, fringilla vitae magna. "
         Snacky.builder()
             .setActivity(this@AboutActivity)
             .setText(R.string.sending)

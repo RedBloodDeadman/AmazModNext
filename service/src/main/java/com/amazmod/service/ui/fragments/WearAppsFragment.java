@@ -255,13 +255,18 @@ public class WearAppsFragment extends Fragment {
             @Override
             public void onClick(View view, int position) {
                 Logger.debug("WearFilesFragment addOnItemTouchListener onClick");
-                onItemClick(position);
+                //onItemClick(position);
+                if (appInfoList.get(position).getAppName().equals(getResources().getString(R.string.refresh))) {
+                    onItemClick(position);
+                } else {
+                    onItemLongClick(position);
+                }
             }
 
             @Override
             public void onLongClick(View view, int position) {
                 Logger.debug("WearFilesFragment addOnItemTouchListener onLongClick");
-                onItemLongClick(position);
+                //onItemLongClick(position);
             }
         }));
     }

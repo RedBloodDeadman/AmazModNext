@@ -4,7 +4,9 @@ import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.os.Handler;
 import android.util.DisplayMetrics;
+import android.widget.Toast;
 
 import androidx.emoji.bundled.BundledEmojiCompatConfig;
 import androidx.emoji.text.EmojiCompat;
@@ -12,10 +14,14 @@ import androidx.emoji.text.EmojiCompat;
 import com.amazmod.service.db.model.BatteryDbEntity;
 import com.amazmod.service.db.model.BatteryDbEntity_Table;
 import com.amazmod.service.settings.SettingsManager;
+import com.amazmod.service.springboard.LauncherWearGridActivity;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.DeviceUtil;
+import com.amazmod.service.util.SystemProperties;
 import com.raizlabs.android.dbflow.config.FlowManager;
 import com.raizlabs.android.dbflow.sql.language.SQLite;
 
+import org.greenrobot.eventbus.EventBus;
 import org.tinylog.Logger;
 import org.tinylog.configuration.Configuration;
 
@@ -73,7 +79,7 @@ public class AmazModService extends Application {
     private void setupLogger() {
         level = "error";
         //if (BuildConfig.VERSION_NAME.toLowerCase().contains("dev"))
-            level = "trace";
+        level = "trace";
         //System.out.println("D/AmazMod AmazModService Tinylog configured debug: " + DEBUG + " level: " + level);
         Configuration.set("writerLogcat", "logcat");
         Configuration.set("writerLogcat.level", level);
