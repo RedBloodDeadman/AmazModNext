@@ -16,10 +16,14 @@ import com.edotassi.amazmod.event.NotificationReply;
 import com.edotassi.amazmod.event.OnApEnableResult;
 import com.edotassi.amazmod.event.OnApStateChanged;
 import com.edotassi.amazmod.event.OtherData;
+import com.edotassi.amazmod.event.PrevMusic;
 import com.edotassi.amazmod.event.SilenceApplication;
 import com.edotassi.amazmod.event.SyncBattery;
 import com.edotassi.amazmod.event.TakePicture;
 import com.edotassi.amazmod.event.ToggleMusic;
+import com.edotassi.amazmod.event.VolDown;
+import com.edotassi.amazmod.event.VolMute;
+import com.edotassi.amazmod.event.VolUp;
 import com.edotassi.amazmod.event.local.ActionToNotificationLocal;
 import com.edotassi.amazmod.event.local.FtpOnStateChangedLocal;
 import com.edotassi.amazmod.event.local.IntentToNotificationLocal;
@@ -74,6 +78,33 @@ public class TransportListener {
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void volUp(VolUp volUp) {
+        AudioManager mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        if (mAudioManager.isMusicActive()) {
+            mAudioManager.adjustVolume(AudioManager.ADJUST_RAISE, AudioManager.FLAG_PLAY_SOUND);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void volDown(VolDown volDown) {
+        AudioManager mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        if (mAudioManager.isMusicActive()) {
+            mAudioManager.adjustVolume(AudioManager.ADJUST_LOWER, AudioManager.FLAG_PLAY_SOUND);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void volMute(VolMute volMute) {
+        AudioManager mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        if (mAudioManager.isMusicActive()) {
+            mAudioManager.adjustVolume(AudioManager.ADJUST_TOGGLE_MUTE, AudioManager.FLAG_PLAY_SOUND);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
     public void nextMusic(NextMusic nextMusic) {
         AudioManager mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
@@ -84,6 +115,21 @@ public class TransportListener {
             mAudioManager.dispatchMediaKeyEvent(downEvent);
 
             KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_NEXT, 0);
+            mAudioManager.dispatchMediaKeyEvent(upEvent);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void prevMusic(PrevMusic prevMusic) {
+        AudioManager mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+
+        if (mAudioManager.isMusicActive()) {
+            long eventtime = SystemClock.uptimeMillis();
+
+            KeyEvent downEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
+            mAudioManager.dispatchMediaKeyEvent(downEvent);
+
+            KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0);
             mAudioManager.dispatchMediaKeyEvent(upEvent);
         }
     }

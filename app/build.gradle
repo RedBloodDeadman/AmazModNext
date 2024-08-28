@@ -13,7 +13,7 @@ android {
         minSdkVersion 24
         targetSdkVersion 29
         versionCode 235
-        versionName "1.2.7-dev"
+        versionName "1.2.8-dev"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         setProperty("archivesBaseName", "AmazMod-$project.name-$versionCode")
     }

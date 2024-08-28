@@ -23,6 +23,7 @@ import com.amazmod.service.ui.fragments.WearFilesFragment;
 import com.amazmod.service.ui.fragments.WearFlashlightFragment;
 import com.amazmod.service.ui.fragments.WearInfoFragment;
 import com.amazmod.service.ui.fragments.WearMenuFragment;
+import com.amazmod.service.ui.fragments.WearMusicFragment;
 import com.amazmod.service.ui.fragments.WearNotificationsFragment;
 import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.SystemProperties;
@@ -46,6 +47,7 @@ public class LauncherWearGridActivity extends Activity {
 
     public static final String MODE = "mode";
     public static final char CAMERA = 'C';
+    public static final char MUSIC = 'M';
     public static final char APPS = 'A';
     public static final char SETTINGS = 'S';
     public static final char INFO = 'I';
@@ -150,6 +152,10 @@ public class LauncherWearGridActivity extends Activity {
 
             case CAMERA:
                 fragList.add(WearCameraFragment.newInstance());
+                break;
+
+            case MUSIC:
+                fragList.add(WearMusicFragment.newInstance());
                 break;
 
             case APPS:

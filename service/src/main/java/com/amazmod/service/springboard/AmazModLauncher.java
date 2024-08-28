@@ -101,6 +101,7 @@ public class AmazModLauncher extends AbstractPlugin {
     private static final String MANAGE_APPS = "App Manager";
     private static final String MANAGE_FILES = "File Manager";
     private static final String REMOTE_PHOTO = "Remote Photo";
+    private static final String MUSIC_CONTROL = "Music Control";
     private static final String MENU_ENTRY = "MENU ENTRY";
     private static final String[] HIDDEN_APPS = {"amazmod",
             "touchone",
@@ -435,6 +436,7 @@ public class AmazModLauncher extends AbstractPlugin {
         final Drawable appsDrawable = mContext.getResources().getDrawable(R.drawable.baseline_apps_24);
         final Drawable filesDrawable = mContext.getResources().getDrawable(R.drawable.outline_folder_white_24);
         final Drawable photoDrawable = mContext.getResources().getDrawable(R.drawable.ic_remote_camera);
+        final Drawable musicDrawable = mContext.getResources().getDrawable(R.drawable.baseline_music_note_24);
 
         Flowable.fromCallable(new Callable<List<AppInfo>>() {
                     @Override
@@ -454,8 +456,10 @@ public class AmazModLauncher extends AbstractPlugin {
                         }
 
                         sortAppInfo(appInfoList);
-                        //AppInfo takePhoto = new AppInfo(REMOTE_PHOTO, "", MENU_ENTRY, "0", photoDrawable);
-                        //appInfoList.add(takePhoto);
+                        AppInfo musicControl = new AppInfo(MUSIC_CONTROL, "", MENU_ENTRY, "0", musicDrawable);
+                        appInfoList.add(musicControl);
+                        AppInfo takePhoto = new AppInfo(REMOTE_PHOTO, "", MENU_ENTRY, "0", photoDrawable);
+                        appInfoList.add(takePhoto);
                         AppInfo appInfo = new AppInfo(MANAGE_FILES, "", MENU_ENTRY, "0", filesDrawable);
                         appInfoList.add(appInfo);
                         appInfo = new AppInfo(MANAGE_APPS, "", MENU_ENTRY, "0", appsDrawable);
@@ -595,6 +599,9 @@ public class AmazModLauncher extends AbstractPlugin {
             mContext.startActivity(intent);
         } else if (REMOTE_PHOTO.equals(appInfoList.get(itemChosen).getAppName()) && MENU_ENTRY.equals(version)) {
             intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.CAMERA);
+            mContext.startActivity(intent);
+        } else if (MUSIC_CONTROL.equals(appInfoList.get(itemChosen).getAppName()) && MENU_ENTRY.equals(version)) {
+            intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.MUSIC);
             mContext.startActivity(intent);
         } else {
             Intent launchIntent = mContext.getPackageManager().getLaunchIntentForPackage(appInfoList.get(itemChosen).getPackageName());

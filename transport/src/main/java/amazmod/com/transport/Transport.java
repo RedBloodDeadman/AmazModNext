@@ -44,6 +44,10 @@ public class Transport {
     public static final String INTENT = "intent";
     public static final String TOGGLE_MUSIC = "toggle_music";
     public static final String NEXT_MUSIC = "next_music";
+    public static final String PREV_MUSIC = "prev_music";
+    public static final String VOL_UP = "vol_up";
+    public static final String VOL_DOWN = "vol_down";
+    public static final String VOL_MUTE = "vol_mute";
     public static final String RESULT_DELETE_FILE = "result_delete_file";
     public static final String RESULT_DOWNLOAD_FILE_CHUNK = "result_download_file_chunk";
     public static final String RESULT_SHELL_COMMAND = "result_shell_command";

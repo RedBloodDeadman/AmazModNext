@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black"
+    android:backgroundTintMode="src_in">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="15dp"
+            android:layout_gravity="center"
+            android:orientation="horizontal">
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_vol_down"
+                android:layout_width="55dp"
+                android:layout_height="55dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_volume_down_24"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="@dimen/big_circle_radius"
+                app:circle_radius_pressed="@dimen/small_circle_radius"/>
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_vol_mute"
+                android:layout_width="55dp"
+                android:layout_height="55dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_volume_mute_24"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="@dimen/big_circle_radius"
+                app:circle_radius_pressed="@dimen/small_circle_radius"/>
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_vol_up"
+                android:layout_width="55dp"
+                android:layout_height="55dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_volume_up_24"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="@dimen/big_circle_radius"
+                app:circle_radius_pressed="@dimen/small_circle_radius"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="horizontal">
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_prev"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_skip_previous_24"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="@dimen/big_circle_radius"
+                app:circle_radius_pressed="@dimen/small_circle_radius"/>
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_play_pause"
+                android:layout_width="70dp"
+                android:layout_height="70dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_play_pause_icon"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="35dp"
+                app:circle_radius_pressed="34dp"/>
+
+            <android.support.wearable.view.CircledImageView
+                android:id="@+id/music_next"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="center"
+                android:background="@drawable/baseline_skip_next_24"
+                app:circle_border_color="@color/light_grey"
+                app:circle_border_width="2dp"
+                app:circle_color="@android:color/transparent"
+                app:circle_radius="@dimen/big_circle_radius"
+                app:circle_radius_pressed="@dimen/small_circle_radius"/>
+        </LinearLayout>
+
+
+    </LinearLayout>
+</FrameLayout>

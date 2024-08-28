@@ -1,5 +1,15 @@
 <changelog>
     <release
+        date="2024-08-28"
+        versionCode="235"
+        versionName="v1.2.8">
+        <new>Added music control</new>
+        <new>Added remote photo</new>
+        <new>Added up/down button control for new notifications on Stratos 3</new>
+        <bugfix>Improved connection stability</bugfix>
+        <bugfix>Fixed delay in notifications appearing</bugfix>
+    </release>
+    <release
         date="2024-03-21"
         versionCode="233"
         versionName="v1.2.5">
