@@ -69,6 +69,11 @@ public class ButtonListener {
         }
         if (wakeLock != null && wakeLock.isHeld())
             wakeLock.release();
+
+        if (longPressTimer != null) {
+            longPressTimer.cancel();
+            longPressTimer.purge();
+        }
     }
 
     private class listenerThread extends Thread {
@@ -117,34 +122,38 @@ public class ButtonListener {
 
                     long now = System.currentTimeMillis();
 
-                    long lastKeyDown = lastEvents.get((int) code);
+                    try {
+                        long lastKeyDown = lastEvents.get((int) code);
 
-                    TimerTask timerTask = new TimerTask() {
-                        @Override
-                        public void run() {
-                            if (longButtonPressFlag) {
-                                Log.d("Button Listener", "TimerTask isAlive: " + isAlive());
-                                Log.d("Button Listener", "TimerTask isInterrupted: " + isInterrupted());
-                                KeyEventListener.onKeyPress(new KeyEvent(code, true));
+                        TimerTask timerTask = new TimerTask() {
+                            @Override
+                            public void run() {
+                                if (longButtonPressFlag) {
+                                    Log.d("Button Listener", "TimerTask isAlive: " + isAlive());
+                                    Log.d("Button Listener", "TimerTask isInterrupted: " + isInterrupted());
+                                    KeyEventListener.onKeyPress(new KeyEvent(code, true));
+                                }
                             }
-                        }
-                    };
+                        };
 
-                    if (value == KEY_EVENT_UP) {
-                        longButtonPressFlag = false;
-                        Log.d("Button Listener", "KEY_EVENT_UP");
-                        long delta = now - lastKeyDown;
-                        if (delta < TRIGGER) {
-                            KeyEventListener.onKeyPress(new KeyEvent(code, false));
+                        if (value == KEY_EVENT_UP) {
+                            longButtonPressFlag = false;
+                            Log.d("Button Listener", "KEY_EVENT_UP");
+                            long delta = now - lastKeyDown;
+                            if (delta < TRIGGER) {
+                                KeyEventListener.onKeyPress(new KeyEvent(code, false));
+                            }
+                        } else if (value == KEY_EVENT_PRESS) {
+                            Log.d("Button Listener", "KEY_EVENT_PRESS");
+                            lastKeyDown = now;
+                            longButtonPressFlag = true;
+                            restartTimer(timerTask);
                         }
-                    } else if (value == KEY_EVENT_PRESS) {
-                        Log.d("Button Listener", "KEY_EVENT_PRESS");
-                        lastKeyDown = now;
-                        longButtonPressFlag = true;
-                        restartTimer(timerTask);
+
+                        lastEvents.put((int) code, lastKeyDown);
+                    } catch (NullPointerException e) {
+                        Logger.error(e.getMessage());
                     }
-
-                    lastEvents.put((int) code, lastKeyDown);
                 }
             } catch (IOException e) {
                 Logger.error(e);
