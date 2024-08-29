@@ -122,6 +122,8 @@
     <string name="pref_run_wizard_summary">Run the welcome presentation again.</string>
     <string name="pref_vibration_duration">Vibration duration</string>
     <string name="pref_vibration_duration_summary">Set vibration duration of notification screen.</string>
+    <string name="pref_vibration_amount">Number of vibrations</string>
+    <string name="pref_vibration_amount_summary">Customizing the amount of notification screen vibration.</string>
     <string name="pref_screen_timeout">Screen timeout</string>
     <string name="pref_screen_timeout_summary">Set duration of notification screen.</string>
     <string name="pref_disable_notifications_when_dnd">Respect DND mode</string>
@@ -515,4 +517,5 @@ follow the system theme (beta).</string>
     <string name="data_transfer_method">Data transfer method</string>
     <string name="data_transfer_method_descr">Data transfer method for uploading, downloading files, installing APK and Watchfaces.\nNote: WiFi transmission is more stable when the watch and phone are on the same network. WiFi method does not work with VPN enabled.</string>
     <string name="apk_install_started_continue">Continue installation on the watch.</string>
+
 </resources>

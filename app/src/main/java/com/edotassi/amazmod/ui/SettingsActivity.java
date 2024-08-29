@@ -309,6 +309,8 @@ public class SettingsActivity extends BaseAppCompatActivity implements SearchPre
                 Constants.PREF_DEFAULT_NOTIFICATIONS_REPLIES);
         final int vibration = Integer.valueOf(Prefs.getString(Constants.PREF_NOTIFICATIONS_VIBRATION,
                 Constants.PREF_DEFAULT_NOTIFICATIONS_VIBRATION));
+        final int vibrationAmount = Integer.valueOf(Prefs.getString(Constants.PREF_NOTIFICATIONS_VIBRATION_AMOUNT,
+                Constants.PREF_DEFAULT_NOTIFICATIONS_VIBRATION_AMOUNT));
         final int screeTimeout = Integer.valueOf(Prefs.getString(Constants.PREF_NOTIFICATIONS_SCREEN_TIMEOUT,
                 Constants.PREF_DEFAULT_NOTIFICATIONS_SCREEN_TIMEOUT));
         final boolean enableCustomUi = Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_ENABLE_CUSTOM_UI,
@@ -396,6 +398,7 @@ public class SettingsActivity extends BaseAppCompatActivity implements SearchPre
         SettingsData settingsData = new SettingsData();
         settingsData.setReplies(replies);
         settingsData.setVibration(vibration);
+        settingsData.setVibrationAmount(vibrationAmount);
         settingsData.setScreenTimeout(screeTimeout);
         settingsData.setNotificationsCustomUi(enableCustomUi);
         settingsData.setNotificationSound(enableSoundCustomUI);

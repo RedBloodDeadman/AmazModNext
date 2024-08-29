@@ -28,6 +28,7 @@ public class Constants {
     public static final String PREF_DISABLE_NOTIFICATIONS_REPLIES = "preference.enable.replies";
     public static final String PREF_NOTIFICATION_SCREEN_TIMEOUT = "pref_notification_screen_timeout";
     public static final String PREF_NOTIFICATION_VIBRATION = "pref_notification_vibration";
+    public static final String PREF_NOTIFICATION_VIBRATION_AMOUNT = "pref_notification_vibration_amount";
     public static final String PREF_NOTIFICATION_CUSTOM_REPLIES = "pref_notification_custom_replies";
     public static final String PREF_NOTIFICATIONS_ENABLE_CUSTOM_UI = "pref_notifications_enable_custom_ui";
     public static final String PREF_NOTIFICATION_ENABLE_SOUND = "pref_notification_enable_sound";

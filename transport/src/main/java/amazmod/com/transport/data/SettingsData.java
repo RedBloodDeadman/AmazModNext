@@ -13,6 +13,7 @@ public class SettingsData extends Transportable implements Parcelable {
     public static final String EXTRA = "settings";
     public static final String REPLIES = "replies";
     public static final String VIBRATION = "vibration";
+    public static final String VIBRATION_AMOUNT = "vibration_amount";
     public static final String SCREEN_TIMEOUT = "screen_timeout";
     public static final String NOTIFICATIONS_CUSTOM_UI = "notifications_custom_ui";
     public static final String NOTIFICATION_SOUND = "notification_sound";
@@ -41,6 +42,7 @@ public class SettingsData extends Transportable implements Parcelable {
 
     private String replies;
     private int vibration;
+    private int vibrationAmount;
     private int screenTimeout;
     private boolean notificationsCustomUi;
     private boolean notificationSound;
@@ -72,6 +74,7 @@ public class SettingsData extends Transportable implements Parcelable {
     protected SettingsData(Parcel in) {
         replies = in.readString();
         vibration = in.readInt();
+        vibrationAmount = in.readInt();
         screenTimeout = in.readInt();
         notificationsCustomUi = in.readByte() != 0;
         notificationSound = in.readByte() != 0;
@@ -114,6 +117,7 @@ public class SettingsData extends Transportable implements Parcelable {
     public DataBundle toDataBundle(DataBundle dataBundle) {
         dataBundle.putString(REPLIES, replies);
         dataBundle.putInt(VIBRATION, vibration);
+        dataBundle.putInt(VIBRATION_AMOUNT, vibrationAmount);
         dataBundle.putInt(SCREEN_TIMEOUT, screenTimeout);
         dataBundle.putBoolean(NOTIFICATIONS_CUSTOM_UI, notificationsCustomUi);
         dataBundle.putBoolean(NOTIFICATION_SOUND, notificationSound);
@@ -148,6 +152,7 @@ public class SettingsData extends Transportable implements Parcelable {
         settingsData.setReplies(dataBundle.getString(REPLIES));
         settingsData.setScreenTimeout(dataBundle.getInt(SCREEN_TIMEOUT));
         settingsData.setVibration(dataBundle.getInt(VIBRATION));
+        settingsData.setVibrationAmount(dataBundle.getInt(VIBRATION_AMOUNT));
         settingsData.setNotificationsCustomUi(dataBundle.getBoolean(NOTIFICATIONS_CUSTOM_UI));
         settingsData.setNotificationSound(dataBundle.getBoolean(NOTIFICATION_SOUND));
         settingsData.setDisableNotifications(dataBundle.getBoolean(DISABLE_NOTIFICATIONS));
@@ -196,6 +201,14 @@ public class SettingsData extends Transportable implements Parcelable {
 
     public void setVibration(int vibration) {
         this.vibration = vibration;
+    }
+
+    public int getVibrationAmount() {
+        return vibrationAmount;
+    }
+
+    public void setVibrationAmount(int vibrationAmount) {
+        this.vibrationAmount = vibrationAmount;
     }
 
     public int getScreenTimeout() {
@@ -397,6 +410,7 @@ public class SettingsData extends Transportable implements Parcelable {
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeString(replies);
         dest.writeInt(vibration);
+        dest.writeInt(vibrationAmount);
         dest.writeInt(screenTimeout);
         dest.writeByte((byte) (notificationsCustomUi ? 1 : 0));
         dest.writeByte((byte) (notificationSound ? 1 : 0));

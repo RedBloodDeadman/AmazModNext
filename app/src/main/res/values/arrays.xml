@@ -60,6 +60,22 @@
         <item>500</item>
     </string-array>
 
+    <string-array name="pref_amazmodservice_vibration_amount_entries" translatable="false">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+
+    <string-array name="pref_amazmodservice_vibration_amount_values" translatable="false">
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+
     <string-array name="pref_amazmodservice_screen_timeout_entries" translatable="false">
         <item>3 s</item>
         <item>5 s</item>

@@ -21,6 +21,7 @@ public class NotificationData extends Transportable implements Parcelable {
     private final String DATA_ICON = "icon";
     private final String DATA_LARGE_ICON = "largeIcon";
     private final String DATA_VIBRATION = "vibration";
+    private final String DATA_VIBRATION_AMOUNT = "vibration_amount";
     private final String DATA_FORCE_CUSTOM = "forceCustom";
     private final String DATA_HIDE_REPLIES = "hideReplies";
     private final String DATA_HIDE_BUTTONS = "hideButtons";
@@ -38,6 +39,7 @@ public class NotificationData extends Transportable implements Parcelable {
     private byte[] largeIcon;
     private byte[] picture;
     private int vibration;
+    private int vibrationAmount;
     private boolean isDeviceLocked;
     private int timeoutRelock;
     private boolean forceCustom;
@@ -60,6 +62,7 @@ public class NotificationData extends Transportable implements Parcelable {
         largeIcon = in.createByteArray();
         picture = in.createByteArray();
         vibration = in.readInt();
+        vibrationAmount = in.readInt();
         isDeviceLocked = in.readByte() != 0;
         timeoutRelock = in.readInt();
         forceCustom = in.readByte() != 0;
@@ -169,6 +172,14 @@ public class NotificationData extends Transportable implements Parcelable {
         this.vibration = vibration;
     }
 
+    public int getVibrationAmount() {
+        return vibrationAmount;
+    }
+
+    public void setVibrationAmount(int vibrationAmount) {
+        this.vibrationAmount = vibrationAmount;
+    }
+
     public int getTimeoutRelock() {
         return timeoutRelock;
     }
@@ -230,6 +241,7 @@ public class NotificationData extends Transportable implements Parcelable {
         dataBundle.putByteArray(DATA_LARGE_ICON, largeIcon);
         dataBundle.putByteArray(DATA_PICTURE, picture);
         dataBundle.putInt(DATA_VIBRATION, vibration);
+        dataBundle.putInt(DATA_VIBRATION_AMOUNT, vibrationAmount);
         dataBundle.putBoolean(DATA_FORCE_CUSTOM, forceCustom);
         dataBundle.putBoolean(DATA_HIDE_REPLIES, hideReplies);
         dataBundle.putBoolean(DATA_HIDE_BUTTONS, hideButtons);
@@ -262,6 +274,7 @@ public class NotificationData extends Transportable implements Parcelable {
         byte[] largeIcon = dataBundle.getByteArray("largeIcon");
         byte[] picture = dataBundle.getByteArray("picture");
         int vibration = dataBundle.getInt("vibration");
+        int vibrationAmount = dataBundle.getInt("vibration_amount");
         boolean forceCustom = dataBundle.getBoolean("forceCustom");
         boolean hideReplies = dataBundle.getBoolean("hideReplies");
         boolean hideButtons = dataBundle.getBoolean("hideButtons");
@@ -275,6 +288,7 @@ public class NotificationData extends Transportable implements Parcelable {
         notificationData.setLargeIcon(largeIcon);
         notificationData.setPicture(picture);
         notificationData.setVibration(vibration);
+        notificationData.setVibrationAmount(vibrationAmount);
         notificationData.setId(id);
         notificationData.setKey(key);
         notificationData.setPackageName(packageName);
@@ -304,6 +318,7 @@ public class NotificationData extends Transportable implements Parcelable {
         dest.writeByteArray(largeIcon);
         dest.writeByteArray(picture);
         dest.writeInt(vibration);
+        dest.writeInt(vibrationAmount);
         dest.writeByte((byte) (isDeviceLocked ? 1 : 0));
         dest.writeInt(timeoutRelock);
         dest.writeByte((byte) (forceCustom ? 1 : 0));

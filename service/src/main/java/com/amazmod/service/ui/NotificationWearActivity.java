@@ -128,7 +128,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     private static final String ACTION_MUTE = "mute";
 
     private ButtonListener buttonListener = new ButtonListener();
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -402,7 +402,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
         }
         screenToggle = mode;
     }
-    
+
     //from fragment
     private void updateContent() {
         try {
@@ -481,7 +481,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
             if (disableNotificationText)
                 hideContent();
 
-            doVibration(notificationData.getVibration());
+            doVibration(notificationData.getVibration(), notificationData.getVibrationAmount());
 
         } catch (NullPointerException exception) {
             Logger.error(exception, exception.getMessage());
@@ -934,10 +934,14 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
         delayedConfirmationViewBottom.setVisibility(View.GONE);
     }
 
-    private void doVibration(int duration) {
+    private void doVibration(int duration, int vibrationAmount) {
         if (duration > 0 && NotificationWearActivity.MODE_ADD.equals(mode)) {
             Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
-            long[] pattern = { 0, duration, duration, duration };
+            long[] pattern = new long[vibrationAmount * 2];
+            pattern[0] = 0; //first delay
+            for (int i = 1; i < vibrationAmount * 2; i++) {
+                pattern[i] = duration;
+            }
             try {
                 if (vibrator != null) {
                     vibrator.vibrate(pattern, -1);
@@ -1024,17 +1028,17 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
         }, 1500);
     }
 
-    private void setupBtnListener(){
+    private void setupBtnListener() {
         buttonListener.start(this, keyEvent -> {
             if (SystemProperties.isStratos3())
-                switch(keyEvent.getCode()){
+                switch (keyEvent.getCode()) {
                     case ButtonListener.S3_KEY_MIDDLE_UP:
                         startTimerFinish();
-                        scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY()-100);
+                        scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() - 100);
                         break;
                     case ButtonListener.S3_KEY_MIDDLE_DOWN:
                         startTimerFinish();
-                        scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY()+100);
+                        scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() + 100);
                         break;
                 }
         });

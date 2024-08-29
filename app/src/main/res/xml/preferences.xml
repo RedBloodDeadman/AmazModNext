@@ -166,6 +166,17 @@
             android:summary="@string/pref_vibration_duration_summary"
             android:title="@string/pref_vibration_duration" />
 
+        <ListPreference
+            app:iconSpaceReserved="false"
+            android:defaultValue="2"
+            android:dependency="preference.notifications.enable.custom.ui"
+            android:dialogTitle="@string/pref_vibration_amount"
+            android:entries="@array/pref_amazmodservice_vibration_amount_entries"
+            android:entryValues="@array/pref_amazmodservice_vibration_amount_values"
+            android:key="preference.amazmodservice.vibration.amount"
+            android:summary="@string/pref_vibration_amount_summary"
+            android:title="@string/pref_vibration_amount" />
+
         <SwitchPreferenceCompat
             app:iconSpaceReserved="false"
             android:defaultValue="false"

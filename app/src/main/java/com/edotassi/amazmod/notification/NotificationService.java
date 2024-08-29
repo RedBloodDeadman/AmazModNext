@@ -411,6 +411,7 @@ public class NotificationService extends NotificationListenerService {
         notificationsAvailableToReply.put(notificationData.getKey(), statusBarNotification);
 
         notificationData.setVibration(getDefaultVibration());
+        notificationData.setVibrationAmount(getDefaultVibrationAmount());
         notificationData.setHideButtons(true);
         notificationData.setForceCustom(false);
 
@@ -523,6 +524,11 @@ public class NotificationService extends NotificationListenerService {
 
     private int getDefaultVibration() {
         return Integer.parseInt(Prefs.getString(Constants.PREF_NOTIFICATIONS_VIBRATION, Constants.PREF_DEFAULT_NOTIFICATIONS_VIBRATION));
+
+    }
+
+    private int getDefaultVibrationAmount() {
+        return Integer.parseInt(Prefs.getString(Constants.PREF_NOTIFICATIONS_VIBRATION_AMOUNT, Constants.PREF_DEFAULT_NOTIFICATIONS_VIBRATION_AMOUNT));
 
     }
 
@@ -898,6 +904,7 @@ public class NotificationService extends NotificationListenerService {
         if (!txt.equals(lastTxt) || ((System.currentTimeMillis() - lastTimeNotificationSent) > MAPS_INTERVAL)) {
             // Set vibration
             notificationData.setVibration(getDefaultVibration());
+            notificationData.setVibrationAmount(getDefaultVibrationAmount());
             lastTxt = txt;
 
             TransportService.sendWithTransporterNotifications(Transport.INCOMING_NOTIFICATION, notificationData.toDataBundle(new DataBundle()));
@@ -951,6 +958,7 @@ public class NotificationService extends NotificationListenerService {
 
                 notificationData.setText(notificationData.getText() + "\n" + applicationName);
                 notificationData.setVibration(getDefaultVibration());
+                notificationData.setVibrationAmount(getDefaultVibrationAmount());
                 notificationData.setHideReplies(true);
                 notificationData.setHideButtons(false);
                 notificationData.setForceCustom(true);
