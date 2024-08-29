@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.support.wearable.view.CircledImageView;
+import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,7 +44,6 @@ public class WearMusicFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setupBtnListener();
         Logger.info("WearMusicFragment onCreate");
 
     }
@@ -69,9 +69,20 @@ public class WearMusicFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        setupBtnListener();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        btnListener.stop();
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
-        btnListener.stop();
     }
 
     private void init() {

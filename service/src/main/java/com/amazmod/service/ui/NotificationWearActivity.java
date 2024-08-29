@@ -937,9 +937,10 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     private void doVibration(int duration) {
         if (duration > 0 && NotificationWearActivity.MODE_ADD.equals(mode)) {
             Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
+            long[] pattern = { 0, duration, duration, duration };
             try {
                 if (vibrator != null) {
-                    vibrator.vibrate(duration);
+                    vibrator.vibrate(pattern, -1);
                 }
             } catch (RuntimeException ex) {
                 Logger.error(ex, ex.getMessage());

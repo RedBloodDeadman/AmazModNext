@@ -54,7 +54,6 @@ public class WearCameraFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setupBtnListener();
         Logger.info("WearAppsFragment onCreate");
 
     }
@@ -80,9 +79,20 @@ public class WearCameraFragment extends Fragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        setupBtnListener();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        btnListener.stop();
+    }
+
+    @Override
     public void onDestroy() {
         super.onDestroy();
-        btnListener.stop();
     }
 
     private void init(){
