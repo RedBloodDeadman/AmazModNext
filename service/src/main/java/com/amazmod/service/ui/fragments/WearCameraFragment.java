@@ -43,6 +43,7 @@ public class WearCameraFragment extends Fragment {
     private Button takepict, changedelay;
     private int currDelay = -1;
     private ButtonListener btnListener = new ButtonListener();
+    private String cameraDelay = "";
 
     @Override
     public void onAttach(Activity activity) {
@@ -70,6 +71,7 @@ public class WearCameraFragment extends Fragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         Logger.info("WearCameraFragment onViewCreated");
+        cameraDelay = getActivity().getResources().getString(R.string.camera_delay);
         init(); //initialize
     }
 
@@ -118,7 +120,7 @@ public class WearCameraFragment extends Fragment {
         int currIndex = (currDelay == -1) ? currDelay : delays.indexOf(currDelay);
         int newIndex = currIndex == (delays.size() - 1) ? 0 : currIndex + 1;
         currDelay = delays.get(newIndex);
-        changedelay.setText(getResources().getString(R.string.camera_delay) + ": " + currDelay + "s");
+        changedelay.setText(cameraDelay + ": " + currDelay + "s");
 
     }
 
