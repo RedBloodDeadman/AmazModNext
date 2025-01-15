@@ -56,6 +56,7 @@ import com.amazmod.service.events.incoming.RequestUploadFileChunk;
 import com.amazmod.service.events.incoming.RequestWatchStatus;
 import com.amazmod.service.events.incoming.RequestWidgets;
 import com.amazmod.service.events.incoming.RevokeAdminOwner;
+import com.amazmod.service.events.incoming.SleepDataBundle;
 import com.amazmod.service.events.incoming.SyncSettings;
 import com.amazmod.service.events.incoming.Watchface;
 import com.amazmod.service.music.MusicControlInputListener;
@@ -63,7 +64,10 @@ import com.amazmod.service.notifications.NotificationService;
 import com.amazmod.service.receiver.AdminReceiver;
 import com.amazmod.service.receiver.NotificationReplyAndActionReceiver;
 import com.amazmod.service.settings.SettingsManager;
-import com.amazmod.service.sleep.sleepService;
+import com.amazmod.service.sleep.alarm.alarmActivity;
+import com.amazmod.service.sleep.alarm.alarmReceiver;
+import com.amazmod.service.sleep.sleepStore;
+import com.amazmod.service.sleep.sleepUtils;
 import com.amazmod.service.springboard.WidgetSettings;
 import com.amazmod.service.support.BatteryJobService;
 import com.amazmod.service.support.NotificationStore;
@@ -123,6 +127,7 @@ import amazmod.com.transport.data.ResultDeleteFileData;
 import amazmod.com.transport.data.ResultDownloadFileChunkData;
 import amazmod.com.transport.data.ResultShellCommandData;
 import amazmod.com.transport.data.SettingsData;
+import amazmod.com.transport.data.SleepData;
 import amazmod.com.transport.data.WatchStatusData;
 import amazmod.com.transport.data.WatchfaceData;
 import amazmod.com.transport.data.WidgetsData;
@@ -133,7 +138,11 @@ import amazmod.com.transport.util.ImageUtils;
  */
 
 public class MainService extends Service implements Transporter.DataListener {
-    private static Transporter transporterGeneral, transporterNotifications, transporterHuami, transporterXdrip;
+    private static Transporter transporterGeneral,
+            transporterNotifications,
+            transporterHuami,
+            transporterXdrip,
+            sleepTransporter;
 
     private static IntentFilter batteryFilter;
     private static long dateLastCharge;
@@ -336,8 +345,11 @@ public class MainService extends Service implements Transporter.DataListener {
         Logger.debug("MainService onCreate transporterXdrip " + (!transporterXdrip.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterXdrip.isTransportServiceConnected())
             transporterXdrip.connectTransportService();
-        //Sleep as android data
-        startService(new Intent(this, sleepService.class));
+        //Sleep as android
+        sleepTransporter = Transporter.get(this, Transport.NAME_SLEEP);
+        sleepTransporter.addDataListener(this);
+        if (!sleepTransporter.isTransportServiceConnected())
+            sleepTransporter.connectTransportService();
 
 
         // This is so we can enable Power Save mode
@@ -431,7 +443,10 @@ public class MainService extends Service implements Transporter.DataListener {
             transporterXdrip.disconnectTransportService();
             transporterXdrip = null;
         }
-        stopService(new Intent(this, sleepService.class));
+        sleepTransporter.removeDataListener(this);
+        if (sleepTransporter.isTransportServiceConnected())
+            sleepTransporter.disconnectTransportService();
+        sleepTransporter = null;
 
         // Unbind spltClockClient
         if (slptClockClient != null)
@@ -452,6 +467,7 @@ public class MainService extends Service implements Transporter.DataListener {
     private ArrayMap<String, Class> messages = new ArrayMap<String, Class>() {{
         put(Constants.ACTION_NIGHTSCOUT_SYNC, NightscoutDataEvent.class);
         put(Transport.SYNC_SETTINGS, SyncSettings.class);
+        put(Transport.SLEEP_DATA, SleepDataBundle.class);
         put(Transport.INCOMING_NOTIFICATION, IncomingNotificationEvent.class);
         put(Transport.REQUEST_WATCHSTATUS, RequestWatchStatus.class);
         put(Transport.REQUEST_BATTERYSTATUS, RequestBatteryStatus.class);
@@ -839,6 +855,52 @@ public class MainService extends Service implements Transporter.DataListener {
         } catch (SecurityException e) {
             Logger.error("MainService revokeAdminOwner SecurityException: " + e.toString());
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void sleepEvent(SleepDataBundle event) {
+        Logger.debug("sleepEvent: " + event);
+        SleepData sleepData = SleepData.fromDataBundle(event.getDataBundle());
+        switch (sleepData.getAction()) {
+            case SleepData.actions.ACTION_START_TRACKING:
+                sleepUtils.startTracking(this, sleepData.isDoHrMonitoring());
+                break;
+            case SleepData.actions.ACTION_STOP_TRACKING:
+                sleepUtils.stopTracking(this);
+                break;
+            case SleepData.actions.ACTION_SET_PAUSE:
+                Logger.debug("Pause Timestamp: " + sleepData.getTimestamp());
+                sleepStore.setTimestamp(sleepData.getTimestamp(), this);
+                break;
+            case SleepData.actions.ACTION_SET_SUSPENDED:
+                sleepStore.setSuspended(sleepData.isSuspended(), this);
+                break;
+            case SleepData.actions.ACTION_SET_BATCH_SIZE:
+                sleepStore.setBatchSize(sleepData.getBatchsize());
+                break;
+            case SleepData.actions.ACTION_START_ALARM:
+                Intent alarmIntent = new Intent(this, alarmActivity.class);
+                alarmIntent.putExtra("DELAY", sleepData.getDelay());
+                alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(alarmIntent);
+                break;
+            case SleepData.actions.ACTION_STOP_ALARM:
+                LocalBroadcastManager.getInstance(this)
+                        .sendBroadcast(new Intent(alarmActivity.INTENT_CLOSE));
+                break;
+            case SleepData.actions.ACTION_UPDATE_ALARM:
+                alarmReceiver.setAlarm(this, sleepData.getTimestamp());
+                break;
+            case SleepData.actions.ACTION_SHOW_NOTIFICATION:
+                sleepUtils.postNotification(sleepData.getTitle(), sleepData.getText(), this);
+                break;
+            case SleepData.actions.ACTION_HINT:
+                sleepUtils.startHint(sleepData.getRepeat(), this);
+                break;
+            default:
+                break;
+        }
+        Logger.debug("sleep: Received data with action " + sleepData.getAction());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -1530,6 +1592,21 @@ public class MainService extends Service implements Transporter.DataListener {
                     Logger.debug("SendHuami result: " + dataTransportResult.toString());
                 }
             });
+        }
+    }
+
+    public static void sendSleep(String action, SleepData sleepData) {
+        if (!sleepTransporter.isTransportServiceConnected()) {
+            Logger.debug("Sleep Transport Service Not Connected");
+        }
+
+        if (sleepData != null) {
+            DataBundle dataBundle = sleepData.toDataBundle();
+            sleepTransporter.send(action,
+                    dataBundle,
+                    dataTransportResult -> Logger.debug("Send result: " + dataTransportResult.toString()));
+        } else {
+            Logger.error("Sleep send: can't send a sleep action without DataBundle!");
         }
     }
 

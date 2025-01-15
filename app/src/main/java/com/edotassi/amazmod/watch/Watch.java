@@ -16,6 +16,7 @@ import com.edotassi.amazmod.event.ResultDeleteFile;
 import com.edotassi.amazmod.event.ResultDownloadFileChunk;
 import com.edotassi.amazmod.event.ResultShellCommand;
 import com.edotassi.amazmod.event.ResultWidgets;
+import com.edotassi.amazmod.event.Sleep;
 import com.edotassi.amazmod.event.WatchStatus;
 import com.edotassi.amazmod.support.DownloadHelper;
 import com.edotassi.amazmod.support.PermissionsHelper;
@@ -51,6 +52,7 @@ import amazmod.com.transport.data.RequestShellCommandData;
 import amazmod.com.transport.data.RequestUploadFileChunkData;
 import amazmod.com.transport.data.ResultDownloadFileChunkData;
 import amazmod.com.transport.data.SettingsData;
+import amazmod.com.transport.data.SleepData;
 import amazmod.com.transport.data.WatchfaceData;
 import amazmod.com.transport.data.WidgetsData;
 
@@ -466,6 +468,10 @@ public class Watch {
                 return Objects.requireNonNull(task.getResult()).sendWithResult(Transport.REQUEST_WIDGETS, Transport.REQUEST_WIDGETS, widgetsData);
             }
         });
+    }
+
+    public void sendSleepData(final SleepData sleepData) {
+        transportService.sendWithSleep(Transport.SLEEP_DATA, sleepData, null);
     }
 
     public interface OperationProgress {
