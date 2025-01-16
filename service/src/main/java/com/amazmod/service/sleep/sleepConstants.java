@@ -6,7 +6,7 @@ public class sleepConstants {
 
     //HR Sensor
     public static final int HR_VALUES = 10;
-    public static final long HR_INTERVAL = 5 * 60 * 1000; //5m
+    public static final long HR_INTERVAL = 1 * 60 * 1000; //5m
 
     //Accelerometer
     public static final int SECS_PER_MAX_VALUE = 10;

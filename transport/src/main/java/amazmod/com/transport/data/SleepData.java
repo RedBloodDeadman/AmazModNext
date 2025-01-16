@@ -1,43 +1,85 @@
 package amazmod.com.transport.data;
 
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
 import com.huami.watch.transport.DataBundle;
 
-public class SleepData {
-    //public String EXTRA_PAUSE_TIMESTAMP = "ptimestamp"; //Needed for ACTION_SET_PAUSE
+import java.util.Arrays;
+import java.util.List;
+import java.util.logging.Logger;
 
-    private String EXTRA_ACTION = "sleepaction";
+import amazmod.com.transport.Transportable;
+
+public class SleepData extends Transportable implements Parcelable {
+    public static final String EXTRA_PAUSE_TIMESTAMP = "ptimestamp";
+
+    public static final String EXTRA = "sleepData";
+    public static final String EXTRA_ACTION = "sleepaction";
+    public static final String EXTRA_SUSPENDED = "suspended";
+    public static final String EXTRA_HR_MONITORING = "dohrmonitoring";
+    public static final String EXTRA_BATCH_SIZE = "batchsize";
+    public static final String EXTRA_DELAY = "delay";
+    public static final String EXTRA_HOUR = "hour";
+    public static final String EXTRA_MINUTE = "min";
+    public static final String EXTRA_TIMESTAMP = "timestamp";
+    public static final String EXTRA_TITLE = "title";
+    public static final String EXTRA_TEXT = "text";
+    public static final String EXTRA_REPEAT = "repeat";
+    public static final String EXTRA_MAX_DATA = "maxdata";
+    public static final String EXTRA_MAX_RAW_DATA = "maxrawdata";
+    public static final String EXTRA_HRDATA = "hrdata";
+
     private int action;
-
-    private String EXTRA_SUSPENDED = "suspended";
     private boolean suspended;
-
-    private String EXTRA_BATCH_SIZE = "batchsize";
+    private boolean doHrMonitoring;
     private long batchsize;
-
-    private String EXTRA_DELAY = "delay";
     private int delay;
-
-    private String EXTRA_HOUR = "hour";
     private int hour;
-    private String EXTRA_MINUTE = "min";
     private int minute;
-    private String EXTRA_TIMESTAMP = "timestamp";
     private long timestamp;
-
-    private String EXTRA_TITLE = "title";
     private String title;
-    private String EXTRA_TEXT = "text";
     private String text;
-
-    private String EXTRA_REPEAT = "repeat";
     private int repeat;
-
-    private String EXTRA_MAX_DATA = "maxdata";
     private float[] max_data;
-    private String EXTRA_MAX_RAW_DATA = "maxrawdata";
     private float[] max_raw_data;
-    private String EXTRA_HRDATA = "hrdata";
     private float[] hrdata;
+
+    public SleepData() {
+    }
+
+    protected SleepData(Parcel in) {
+        action = in.readInt();
+        suspended = in.readByte() != 0;
+        doHrMonitoring = in.readByte() != 0;
+        batchsize = in.readLong();
+        delay = in.readInt();
+        hour = in.readInt();
+        minute = in.readInt();
+        timestamp = in.readLong();
+        title = in.readString();
+        text = in.readString();
+        repeat = in.readInt();
+        max_data = in.createFloatArray();
+        max_raw_data = in.createFloatArray();
+        hrdata = in.createFloatArray();
+    }
+
+    public static final Creator<SleepData> CREATOR = new Creator<SleepData>() {
+        @Override
+        public SleepData createFromParcel(Parcel in) {
+            return new SleepData(in);
+        }
+
+        @Override
+        public SleepData[] newArray(int size) {
+            return new SleepData[size];
+        }
+    };
 
     public void setAction(int action) {
         this.action = action;
@@ -53,6 +95,14 @@ public class SleepData {
 
     public void setSuspended(boolean suspended) {
         this.suspended = suspended;
+    }
+
+    public boolean isDoHrMonitoring() {
+        return doHrMonitoring;
+    }
+
+    public void setDoHrMonitoring(boolean doHrMonitoring) {
+        this.doHrMonitoring = doHrMonitoring;
     }
 
     public long getBatchsize() {
@@ -143,84 +193,100 @@ public class SleepData {
         this.hrdata = hrdata;
     }
 
-    public DataBundle toDataBundle(DataBundle dataBundle){
+    @Override
+    public DataBundle toDataBundle(DataBundle dataBundle) {
         dataBundle.putInt(EXTRA_ACTION, action);
-        switch(action){
-            case actions.ACTION_SET_SUSPENDED:
-                dataBundle.putBoolean(EXTRA_SUSPENDED, suspended);
-                break;
-            case actions.ACTION_SET_BATCH_SIZE:
-                dataBundle.putLong(EXTRA_BATCH_SIZE, batchsize);
-                break;
-            case actions.ACTION_START_ALARM:
-                dataBundle.putInt(EXTRA_DELAY, delay);
-                break;
-            case actions.ACTION_UPDATE_ALARM:
-                dataBundle.putInt(EXTRA_HOUR, hour);
-                dataBundle.putInt(EXTRA_MINUTE, minute);
-                dataBundle.putLong(EXTRA_TIMESTAMP, timestamp);
-                break;
-            case actions.ACTION_SHOW_NOTIFICATION:
-                dataBundle.putString(EXTRA_TITLE, title);
-                dataBundle.putString(EXTRA_TEXT, text);
-                break;
-            case actions.ACTION_HINT:
-                dataBundle.putInt(EXTRA_REPEAT, repeat);
-                break;
-            case actions.ACTION_DATA_UPDATE:
-                dataBundle.putFloatArray(EXTRA_MAX_DATA, max_data);
-                dataBundle.putFloatArray(EXTRA_MAX_RAW_DATA, max_raw_data);
-                break;
-            case actions.ACTION_HRDATA_UPDATE:
-                dataBundle.putFloatArray(EXTRA_HRDATA, hrdata);
-                break;
-            default:
-                break;
-        }
+        dataBundle.putBoolean(EXTRA_SUSPENDED, suspended);
+        dataBundle.putBoolean(EXTRA_HR_MONITORING, doHrMonitoring);
+        dataBundle.putLong(EXTRA_BATCH_SIZE, batchsize);
+        dataBundle.putInt(EXTRA_DELAY, delay);
+        dataBundle.putInt(EXTRA_HOUR, hour);
+        dataBundle.putInt(EXTRA_MINUTE, minute);
+        dataBundle.putLong(EXTRA_TIMESTAMP, timestamp);
+        dataBundle.putString(EXTRA_TITLE, title);
+        dataBundle.putString(EXTRA_TEXT, text);
+        dataBundle.putInt(EXTRA_REPEAT, repeat);
+        dataBundle.putString(EXTRA_MAX_DATA, Arrays.toString(max_data));
+        dataBundle.putString(EXTRA_MAX_RAW_DATA, Arrays.toString(max_raw_data));
+        dataBundle.putString(EXTRA_HRDATA, Arrays.toString(hrdata));
         return dataBundle;
     }
 
-    public void fromDataBundle(DataBundle dataBundle){
-        action = dataBundle.getInt(EXTRA_ACTION);
-        switch(action) {
-            case actions.ACTION_SET_SUSPENDED:
-                suspended = dataBundle.getBoolean(EXTRA_SUSPENDED);
-                break;
-            case actions.ACTION_SET_BATCH_SIZE:
-                batchsize = dataBundle.getLong(EXTRA_BATCH_SIZE);
-                break;
-            case actions.ACTION_START_ALARM:
-                delay = dataBundle.getInt(EXTRA_DELAY);
-                break;
-            case actions.ACTION_UPDATE_ALARM:
-                hour = dataBundle.getInt(EXTRA_HOUR);
-                minute = dataBundle.getInt(EXTRA_MINUTE);
-                timestamp = dataBundle.getLong(EXTRA_TIMESTAMP);
-                break;
-            case actions.ACTION_SHOW_NOTIFICATION:
-                title = dataBundle.getString(EXTRA_TITLE);
-                text = dataBundle.getString(EXTRA_TEXT);
-                break;
-            case actions.ACTION_HINT:
-                repeat = dataBundle.getInt(EXTRA_REPEAT);
-                break;
-            case actions.ACTION_DATA_UPDATE:
-                max_data = dataBundle.getFloatArray(EXTRA_MAX_DATA);
-                max_raw_data = dataBundle.getFloatArray(EXTRA_MAX_RAW_DATA);
-                break;
-            case actions.ACTION_HRDATA_UPDATE:
-                hrdata = dataBundle.getFloatArray(EXTRA_HRDATA);
-                break;
-            default:
-                break;
+    public static SleepData fromDataBundle(DataBundle dataBundle) {
+        SleepData sleepData = new SleepData();
+        sleepData.setAction(dataBundle.getInt(SleepData.EXTRA_ACTION));
+        sleepData.setSuspended(dataBundle.getBoolean(EXTRA_SUSPENDED));
+        sleepData.setDoHrMonitoring(dataBundle.getBoolean(EXTRA_HR_MONITORING));
+        sleepData.setBatchsize(dataBundle.getLong(EXTRA_BATCH_SIZE));
+        sleepData.setDelay(dataBundle.getInt(EXTRA_DELAY));
+        sleepData.setHour(dataBundle.getInt(EXTRA_HOUR));
+        sleepData.setMinute(dataBundle.getInt(EXTRA_MINUTE));
+        sleepData.setTimestamp(dataBundle.getLong(EXTRA_TIMESTAMP));
+        sleepData.setTitle(dataBundle.getString(EXTRA_TITLE));
+        sleepData.setText(dataBundle.getString(EXTRA_TEXT));
+        sleepData.setRepeat(dataBundle.getInt(EXTRA_REPEAT));
+        String maxDataString = dataBundle.getString(EXTRA_MAX_DATA);
+        System.out.println("maxDataString: " + maxDataString);
+        float[] maxData = getFloats(maxDataString);
+        sleepData.setMax_data(maxData);
+        String maxRawDataString = dataBundle.getString(EXTRA_MAX_RAW_DATA);
+        float[] maxRawData = getFloats(maxRawDataString);
+        sleepData.setMax_raw_data(maxRawData);
+        String hrDataString = dataBundle.getString(EXTRA_HRDATA);
+        float[] hrData = getFloats(hrDataString);
+        sleepData.setHrdata(hrData);
+        return sleepData;
+    }
+
+    private static float[] getFloats(String stringDataArray) {
+        if (stringDataArray!=null && !stringDataArray.equals("null")) {
+            String[] stringDataArrayList = stringDataArray.substring(1, stringDataArray.length() - 1).split(", ");
+            float[] maxData = new float[stringDataArrayList.length];
+            for (int i = 0; i < stringDataArrayList.length; i++) {
+                String string = stringDataArrayList[i];
+                if (string != null && !string.equals("null"))
+                    maxData[i] = Float.parseFloat(string);
+            }
+            return maxData;
         }
+        return new float[0];
+    }
+
+    @Override
+    public Bundle toBundle() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable(EXTRA, this);
+        return bundle;
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(action);
+        dest.writeByte((byte) (suspended ? 1 : 0));
+        dest.writeByte((byte) (doHrMonitoring ? 1 : 0));
+        dest.writeLong(batchsize);
+        dest.writeInt(delay);
+        dest.writeInt(hour);
+        dest.writeInt(minute);
+        dest.writeLong(timestamp);
+        dest.writeString(title);
+        dest.writeString(text);
+        dest.writeInt(repeat);
+        dest.writeFloatArray(max_data);
+        dest.writeFloatArray(max_raw_data);
+        dest.writeFloatArray(hrdata);
     }
 
     public static class actions {
         //Actions from phone
         public static final int ACTION_START_TRACKING = 0;
         public static final int ACTION_STOP_TRACKING = 1;
-        //public static final int ACTION_SET_PAUSE = 2; //Not added yet
+        public static final int ACTION_SET_PAUSE = 2;
         public static final int ACTION_SET_SUSPENDED = 3;
         public static final int ACTION_SET_BATCH_SIZE = 4;
         public static final int ACTION_START_ALARM = 5;
@@ -235,5 +301,25 @@ public class SleepData {
         //public static final int ACTION_RESUME_FROM_WATCH = 13; //Not added yet
         public static final int ACTION_SNOOZE_FROM_WATCH = 14;
         public static final int ACTION_DISMISS_FROM_WATCH = 15;
+    }
+
+    @Override
+    public String toString() {
+        return "SleepData{" +
+                ", action=" + action +
+                ", suspended=" + suspended +
+                ", doHrMonitoring=" + doHrMonitoring +
+                ", batchsize=" + batchsize +
+                ", delay=" + delay +
+                ", hour=" + hour +
+                ", minute=" + minute +
+                ", timestamp=" + timestamp +
+                ", title='" + title + '\'' +
+                ", text='" + text + '\'' +
+                ", repeat=" + repeat +
+                ", max_data=" + Arrays.toString(max_data) +
+                ", max_raw_data=" + Arrays.toString(max_raw_data) +
+                ", hrdata=" + Arrays.toString(hrdata) +
+                '}';
     }
 }

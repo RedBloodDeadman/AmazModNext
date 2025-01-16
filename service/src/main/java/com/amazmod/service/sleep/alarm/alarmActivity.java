@@ -1,10 +1,11 @@
 package com.amazmod.service.sleep.alarm;
 
+import static amazmod.com.transport.data.SleepData.actions;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioAttributes;
@@ -18,8 +19,8 @@ import android.widget.TextView;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.amazmod.service.MainService;
 import com.amazmod.service.R;
-import com.amazmod.service.sleep.sleepService;
 import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.SystemProperties;
 import com.huami.watch.transport.DataBundle;
@@ -30,9 +31,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import amazmod.com.transport.Transport;
 import amazmod.com.transport.data.SleepData;
-
-import static amazmod.com.transport.data.SleepData.actions;
 
 public class alarmActivity extends Activity {
 
@@ -111,7 +111,8 @@ public class alarmActivity extends Activity {
     private void stop(int action) {
         SleepData sleepData = new SleepData();
         sleepData.setAction(action);
-        sleepService.send(sleepData.toDataBundle(new DataBundle()));
+        Logger.debug("Sleep Data (alarm): " + sleepData);
+        MainService.sendSleep(Transport.SLEEP_DATA, sleepData);
         stop();
     }
 

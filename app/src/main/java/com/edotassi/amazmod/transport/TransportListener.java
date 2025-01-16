@@ -18,6 +18,7 @@ import com.edotassi.amazmod.event.OnApStateChanged;
 import com.edotassi.amazmod.event.OtherData;
 import com.edotassi.amazmod.event.PrevMusic;
 import com.edotassi.amazmod.event.SilenceApplication;
+import com.edotassi.amazmod.event.Sleep;
 import com.edotassi.amazmod.event.SyncBattery;
 import com.edotassi.amazmod.event.TakePicture;
 import com.edotassi.amazmod.event.ToggleMusic;
@@ -30,6 +31,7 @@ import com.edotassi.amazmod.event.local.IntentToNotificationLocal;
 import com.edotassi.amazmod.event.local.OnApEnableResultLocal;
 import com.edotassi.amazmod.event.local.OnApStateChangedLocal;
 import com.edotassi.amazmod.event.local.ReplyToNotificationLocal;
+import com.edotassi.amazmod.event.local.SleepDataLocal;
 import com.edotassi.amazmod.helpers.BatteryHelper;
 import com.edotassi.amazmod.support.SilenceApplicationHelper;
 
@@ -40,6 +42,7 @@ import org.tinylog.Logger;
 
 import amazmod.com.transport.data.BatteryData;
 import amazmod.com.transport.data.SilenceApplicationData;
+import amazmod.com.transport.data.SleepData;
 import amazmod.com.transport.data.SyncBatteryData;
 
 public class TransportListener {
@@ -214,5 +217,12 @@ public class TransportListener {
         Logger.debug("TransportService OnApEnableResult: " + onApEnableResult.toString());
         OnApEnableResultLocal onApEnableResultLocal = new OnApEnableResultLocal(onApEnableResult.getApResultData());
         EventBus.getDefault().post(onApEnableResultLocal);
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void OnSleep(Sleep sleep) {
+        Logger.debug("TransportService OnSleep: " + sleep.toString());
+        SleepDataLocal sleepData = new SleepDataLocal(sleep.getSleepData());
+        EventBus.getDefault().post(sleepData);
     }
 }
