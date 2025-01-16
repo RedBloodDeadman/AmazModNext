@@ -53,7 +53,10 @@ public class heartrate implements SensorEventListener {
             currentValue = 0;
             MainService.sendSleep(Transport.SLEEP_DATA, sleepData);
             sm.unregisterListener(this);
-            waitThread.start();
+            try {
+                waitThread.start();
+            } catch (IllegalThreadStateException ignore) {
+            }
             Logger.debug("Sleep Data (heartrate): " + sleepData);
             Logger.debug("Sending sleep hr data to phone...");
         }

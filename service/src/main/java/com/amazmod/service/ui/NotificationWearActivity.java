@@ -1,11 +1,17 @@
 package com.amazmod.service.ui;
 
+import static java.lang.Math.sqrt;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.media.AudioAttributes;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -43,6 +49,7 @@ import com.amazmod.service.events.IntentNotificationEvent;
 import com.amazmod.service.events.ReplyNotificationEvent;
 import com.amazmod.service.events.SilenceApplicationEvent;
 import com.amazmod.service.settings.SettingsManager;
+import com.amazmod.service.sleep.sleepConstants;
 import com.amazmod.service.support.ActivityFinishRunnable;
 import com.amazmod.service.support.NotificationStore;
 import com.amazmod.service.ui.fragments.WearNotificationsFragment;
@@ -66,7 +73,7 @@ import amazmod.com.transport.util.ImageUtils;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class NotificationWearActivity extends Activity implements DelayedConfirmationView.DelayedConfirmationListener {
+public class NotificationWearActivity extends Activity implements DelayedConfirmationView.DelayedConfirmationListener, SensorEventListener {
     @BindView(R.id.fragment_custom_root_layout)
     BoxInsetLayout rootLayout;
 
@@ -128,6 +135,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     private static final String ACTION_MUTE = "mute";
 
     private ButtonListener buttonListener = new ButtonListener();
+    private SensorManager sm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,6 +155,11 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
         setContentView(R.layout.fragment_notification);
 
         ButterKnife.bind(this);
+
+        sm = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
+        //Batching disabled because it doesn't work on any amazfit
+        sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+                sleepConstants.SAMPLING_PERIOD_US);
 
         swipeLayout.addCallback(new SwipeDismissFrameLayout.Callback() {
             @Override
@@ -262,6 +275,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     protected void onDestroy() {
         super.onDestroy();
         buttonListener.stop();
+        sm.unregisterListener(this);
     }
 
     @Override
@@ -937,17 +951,20 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     private void doVibration(int duration, int vibrationAmount) {
         if (duration > 0 && NotificationWearActivity.MODE_ADD.equals(mode)) {
             Vibrator vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
+            if (vibrationAmount == 0) vibrationAmount = 1;
             long[] pattern = new long[vibrationAmount * 2];
-            pattern[0] = 0; //first delay
-            for (int i = 1; i < vibrationAmount * 2; i++) {
-                pattern[i] = duration;
-            }
-            try {
-                if (vibrator != null) {
-                    vibrator.vibrate(pattern, -1);
+            if (pattern.length > 0) {
+                pattern[0] = 0; //first delay
+                for (int i = 1; i < vibrationAmount * 2; i++) {
+                    pattern[i] = duration;
                 }
-            } catch (RuntimeException ex) {
-                Logger.error(ex, ex.getMessage());
+                try {
+                    if (vibrator != null) {
+                        vibrator.vibrate(pattern, -1);
+                    }
+                } catch (RuntimeException ex) {
+                    //Logger.error(ex, ex.getMessage());
+                }
             }
         }
     }
@@ -1042,5 +1059,32 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
                         break;
                 }
         });
+    }
+
+
+    private long oldTimestamp = 0;
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+        long timestamp = (sensorEvent.timestamp / 1_000_000L);
+
+        float x = sensorEvent.values[0];
+        float y = sensorEvent.values[1];
+        float z = sensorEvent.values[2];
+        float max_raw = (float) sqrt((x * x) + (y * y) + (z * z));
+        //Logger.debug("max_raw: {}", max_raw);
+        if (max_raw > 20) {
+            if (timestamp - oldTimestamp > 300) {
+                Logger.debug("max_raw: triggered ({})", max_raw);
+                startTimerFinish();
+                scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() + 200);
+                oldTimestamp = timestamp;
+            }
+
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
     }
 }

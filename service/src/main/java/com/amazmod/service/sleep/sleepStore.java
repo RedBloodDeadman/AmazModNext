@@ -8,10 +8,10 @@ import com.amazmod.service.sleep.sensor.sensorsStore;
 
 import org.tinylog.Logger;
 
-import java.time.Duration;
-import java.util.Calendar;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
-import java.util.TimerTask;
+import java.util.Locale;
 
 import amazmod.com.transport.Transport;
 import amazmod.com.transport.data.SleepData;
@@ -25,9 +25,9 @@ public class sleepStore {
     private static LinkedList<Float> acc_max_data = new LinkedList<>();
     private static LinkedList<Float> acc_max_raw_data = new LinkedList<>();
 
-    static Handler handler = new Handler();
-    static Runnable runnable;
-    static int delay = sleepConstants.SECS_PER_MAX_VALUE * 1000;
+    static Handler handlerEmptyData = new Handler();
+    static Runnable runnableEmptyData;
+    static int delayEmptyData = (int) (sleepConstants.SECS_PER_MAX_VALUE * 1000);
 
     public static boolean isTracking() {
         return isTracking;
@@ -42,7 +42,7 @@ public class sleepStore {
             timestamp = 0L;
         } else {
             sleepUtils.setSensorsState(false, context, false);
-            handler.removeCallbacks(runnable);
+            handlerEmptyData.removeCallbacks(runnableEmptyData);
             batchSize = 1;
         }
         isTracking = IsTracking;
@@ -84,28 +84,42 @@ public class sleepStore {
             startTimerEmptyData(context);
         } else {
             timestamp = 0L;
-            handler.removeCallbacks(runnable);
+            handlerEmptyData.removeCallbacks(runnableEmptyData);
             sleepUtils.setSensorsState(true, context, isDoHrMonitoring);
         }
     }
 
+    private static int latestSaveBatch = 0;
     private static void startTimerEmptyData(Context context) {
-        handler.post(runnable = new Runnable() {
+        handlerEmptyData.post(runnableEmptyData = new Runnable() {
             public void run() {
-                handler.postDelayed(this, delay);
-                sendEmptyData();
+                handlerEmptyData.postDelayed(this, delayEmptyData);
+
+                int tsMillis = (int) System.currentTimeMillis();
+                if (latestSaveBatch == 0) latestSaveBatch = tsMillis; //First value
+                //If latest time saving batch was >= 10s ago
+                if (tsMillis - latestSaveBatch >= sleepConstants.SECS_PER_MAX_VALUE * 1000 /*To millis*/) {
+                    Logger.debug(new SimpleDateFormat("hh:mm:ss", Locale.US).format(new Date()) + "- Added accelerometer empty values to batch");
+                    sleepStore.addMaxData(0, 0);
+                    latestSaveBatch = tsMillis;
+                    sendEmptyData();
+                }
             }
         });
     }
 
     private static void sendEmptyData() {
-        SleepData sleepData = new SleepData();
-        sleepData.setAction(SleepData.actions.ACTION_DATA_UPDATE);
-        sleepData.setMax_data(new float[]{0f, 0f, 0f, 0f});
-        sleepData.setMax_raw_data(new float[]{0f, 0f, 0f, 0f});
-        Logger.debug("Sleep Empty Data (accelerometer): " + sleepData);
-        Logger.debug("Sending sleep Empty batch to phone...");
-        MainService.sendSleep(Transport.SLEEP_DATA, sleepData);
+        //Send data if batch reached batch size
+        if (sleepStore.getMaxData().size() >= sleepStore.getBatchSize()) {
+            SleepData sleepData = new SleepData();
+            sleepData.setAction(SleepData.actions.ACTION_DATA_UPDATE);
+            sleepData.setMax_data(sleepUtils.linkedToArray(sleepStore.getMaxData()));
+            sleepData.setMax_raw_data(sleepUtils.linkedToArray(sleepStore.getMaxRawData()));
+            sleepStore.resetMaxData();
+            Logger.debug("Sleep empty Data (accelerometer): " + sleepData);
+            Logger.debug("Sending sleep empty batch to phone...");
+            MainService.sendSleep(Transport.SLEEP_DATA, sleepData);
+        }
     }
 
     public static void setTimestamp(long timestamp, Context context) {
@@ -116,7 +130,9 @@ public class sleepStore {
             long millis = deltaTime;
             long minutes = (millis / 1000) / 60;
             int seconds = (int) ((millis / 1000) % 60);
-            sleepUtils.postNotification("Sleep Pause", minutes + "m " + seconds + "s", context);
+            sleepUtils.postNotification("Sleep", "Pause: " + minutes + "m " + seconds + "s", context);
+        } else {
+            sleepUtils.postNotification("Sleep", "Resume", context);
         }
     }
 

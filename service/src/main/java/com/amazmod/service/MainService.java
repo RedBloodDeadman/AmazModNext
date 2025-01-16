@@ -859,48 +859,52 @@ public class MainService extends Service implements Transporter.DataListener {
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void sleepEvent(SleepDataBundle event) {
-        Logger.debug("sleepEvent: " + event);
         SleepData sleepData = SleepData.fromDataBundle(event.getDataBundle());
+        Logger.debug("sleep: Received data with action " + sleepData.getAction());
         switch (sleepData.getAction()) {
             case SleepData.actions.ACTION_START_TRACKING:
+                Logger.debug("ACTION_START_TRACKING");
                 sleepUtils.startTracking(this, sleepData.isDoHrMonitoring());
                 break;
             case SleepData.actions.ACTION_STOP_TRACKING:
+                Logger.debug("ACTION_STOP_TRACKING");
                 sleepUtils.stopTracking(this);
                 break;
             case SleepData.actions.ACTION_SET_PAUSE:
-                Logger.debug("Pause Timestamp: " + sleepData.getTimestamp());
+                Logger.debug("ACTION_SET_PAUSE: {}", sleepData.getTimestamp());
                 sleepStore.setTimestamp(sleepData.getTimestamp(), this);
                 break;
             case SleepData.actions.ACTION_SET_SUSPENDED:
+                Logger.debug("ACTION_SET_SUSPENDED: {}", sleepData.isSuspended());
                 sleepStore.setSuspended(sleepData.isSuspended(), this);
                 break;
             case SleepData.actions.ACTION_SET_BATCH_SIZE:
+                Logger.debug("ACTION_SET_BATCH_SIZE: {}", sleepData.getBatchsize());
                 sleepStore.setBatchSize(sleepData.getBatchsize());
                 break;
             case SleepData.actions.ACTION_START_ALARM:
+                Logger.debug("ACTION_SET_BATCH_SIZE DELAY: {}", sleepData.getDelay());
                 Intent alarmIntent = new Intent(this, alarmActivity.class);
                 alarmIntent.putExtra("DELAY", sleepData.getDelay());
                 alarmIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(alarmIntent);
                 break;
             case SleepData.actions.ACTION_STOP_ALARM:
+                Logger.debug("ACTION_STOP_ALARM");
                 LocalBroadcastManager.getInstance(this)
                         .sendBroadcast(new Intent(alarmActivity.INTENT_CLOSE));
                 break;
-            case SleepData.actions.ACTION_UPDATE_ALARM:
-                alarmReceiver.setAlarm(this, sleepData.getTimestamp());
-                break;
             case SleepData.actions.ACTION_SHOW_NOTIFICATION:
+                Logger.debug("ACTION_SHOW_NOTIFICATION: {}", sleepData.getText());
                 sleepUtils.postNotification(sleepData.getTitle(), sleepData.getText(), this);
                 break;
             case SleepData.actions.ACTION_HINT:
+                Logger.debug("ACTION_HINT: {}", sleepData.getRepeat());
                 sleepUtils.startHint(sleepData.getRepeat(), this);
                 break;
             default:
                 break;
         }
-        Logger.debug("sleep: Received data with action " + sleepData.getAction());
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

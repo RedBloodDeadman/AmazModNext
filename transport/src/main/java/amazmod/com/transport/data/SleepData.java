@@ -291,7 +291,6 @@ public class SleepData extends Transportable implements Parcelable {
         public static final int ACTION_SET_BATCH_SIZE = 4;
         public static final int ACTION_START_ALARM = 5;
         public static final int ACTION_STOP_ALARM = 6;
-        public static final int ACTION_UPDATE_ALARM = 7;
         public static final int ACTION_SHOW_NOTIFICATION = 8;
         public static final int ACTION_HINT = 9;
         //Actions from watch
