@@ -73,7 +73,8 @@ import amazmod.com.transport.util.ImageUtils;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class NotificationWearActivity extends Activity implements DelayedConfirmationView.DelayedConfirmationListener, SensorEventListener {
+public class NotificationWearActivity extends Activity
+        implements DelayedConfirmationView.DelayedConfirmationListener {
     @BindView(R.id.fragment_custom_root_layout)
     BoxInsetLayout rootLayout;
 
@@ -135,7 +136,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     private static final String ACTION_MUTE = "mute";
 
     private ButtonListener buttonListener = new ButtonListener();
-    private SensorManager sm;
+//    private SensorManager sm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,10 +157,10 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
 
         ButterKnife.bind(this);
 
-        sm = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
-        //Batching disabled because it doesn't work on any amazfit
-        sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                sleepConstants.SAMPLING_PERIOD_US);
+//        sm = (SensorManager) this.getSystemService(Context.SENSOR_SERVICE);
+//        //Batching disabled because it doesn't work on any amazfit
+//        sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
+//                sleepConstants.SAMPLING_PERIOD_US);
 
         swipeLayout.addCallback(new SwipeDismissFrameLayout.Callback() {
             @Override
@@ -275,7 +276,7 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
     protected void onDestroy() {
         super.onDestroy();
         buttonListener.stop();
-        sm.unregisterListener(this);
+//        sm.unregisterListener(this);
     }
 
     @Override
@@ -1061,30 +1062,30 @@ public class NotificationWearActivity extends Activity implements DelayedConfirm
         });
     }
 
-
-    private long oldTimestamp = 0;
-
-    @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        long timestamp = (sensorEvent.timestamp / 1_000_000L);
-
-        float x = sensorEvent.values[0];
-        float y = sensorEvent.values[1];
-        float z = sensorEvent.values[2];
-        float max_raw = (float) sqrt((x * x) + (y * y) + (z * z));
-        //Logger.debug("max_raw: {}", max_raw);
-        if (max_raw > 20) {
-            if (timestamp - oldTimestamp > 300) {
-                Logger.debug("max_raw: triggered ({})", max_raw);
-                startTimerFinish();
-                scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() + 200);
-                oldTimestamp = timestamp;
-            }
-
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-    }
+//
+//    private long oldTimestamp = 0;
+//
+//    @Override
+//    public void onSensorChanged(SensorEvent sensorEvent) {
+//        long timestamp = (sensorEvent.timestamp / 1_000_000L);
+//
+//        float x = sensorEvent.values[0];
+//        float y = sensorEvent.values[1];
+//        float z = sensorEvent.values[2];
+//        float max_raw = (float) sqrt((x * x) + (y * y) + (z * z));
+//        //Logger.debug("max_raw: {}", max_raw);
+//        if (max_raw > 20) {
+//            if (timestamp - oldTimestamp > 300) {
+//                Logger.debug("max_raw: triggered ({})", max_raw);
+//                startTimerFinish();
+//                scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() + 200);
+//                oldTimestamp = timestamp;
+//            }
+//
+//        }
+//    }
+//
+//    @Override
+//    public void onAccuracyChanged(Sensor sensor, int i) {
+//    }
 }
