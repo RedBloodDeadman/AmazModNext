@@ -119,6 +119,8 @@ public class AmazModLauncher extends AbstractPlugin {
     private int[] mImagesOff = {R.drawable.baseline_wifi_off_white_24,
             R.drawable.ic_power_off_white_24dp};
 
+    private ButtonListener buttonListener = new ButtonListener();
+
     @SuppressLint("WifiManagerPotentialLeak")
     @Override
     public View getView(final Context paramContext) {
@@ -153,7 +155,7 @@ public class AmazModLauncher extends AbstractPlugin {
 
         return this.view;
     }
-
+    private CircledImageView settings = null;
     private void init() {
 
         Logger.trace("AmazModLauncher init");
@@ -162,7 +164,7 @@ public class AmazModLauncher extends AbstractPlugin {
         ImageView imageView = view.findViewById(R.id.launcher_logo);
         LinearLayout batteryLayout = view.findViewById(R.id.launcher_battery_layout);
         final CircledImageView flashLight = view.findViewById(R.id.launcher_setting_03);
-        final CircledImageView settings = view.findViewById(R.id.launcher_setting_04);
+        settings = view.findViewById(R.id.launcher_setting_04);
         final CircledImageView messages = view.findViewById(R.id.launcher_messages);
 
         wifiToggle = view.findViewById(R.id.launcher_setting_01);
@@ -435,7 +437,7 @@ public class AmazModLauncher extends AbstractPlugin {
         loadHiddenApps(updateHiddenApps);
         final Drawable appsDrawable = mContext.getResources().getDrawable(R.drawable.baseline_apps_24);
         final Drawable filesDrawable = mContext.getResources().getDrawable(R.drawable.outline_folder_white_24);
-        final Drawable photoDrawable = mContext.getResources().getDrawable(R.drawable.ic_remote_camera);
+        //final Drawable photoDrawable = mContext.getResources().getDrawable(R.drawable.ic_remote_camera);
         final Drawable musicDrawable = mContext.getResources().getDrawable(R.drawable.baseline_music_note_24);
 
         Flowable.fromCallable(new Callable<List<AppInfo>>() {
@@ -458,8 +460,8 @@ public class AmazModLauncher extends AbstractPlugin {
                         sortAppInfo(appInfoList);
                         AppInfo musicControl = new AppInfo(MUSIC_CONTROL, "", MENU_ENTRY, "0", musicDrawable);
                         appInfoList.add(musicControl);
-                        AppInfo takePhoto = new AppInfo(REMOTE_PHOTO, "", MENU_ENTRY, "0", photoDrawable);
-                        appInfoList.add(takePhoto);
+                        //AppInfo takePhoto = new AppInfo(REMOTE_PHOTO, "", MENU_ENTRY, "0", photoDrawable);
+                        //appInfoList.add(takePhoto);
                         AppInfo appInfo = new AppInfo(MANAGE_FILES, "", MENU_ENTRY, "0", filesDrawable);
                         appInfoList.add(appInfo);
                         appInfo = new AppInfo(MANAGE_APPS, "", MENU_ENTRY, "0", appsDrawable);
@@ -674,20 +676,33 @@ public class AmazModLauncher extends AbstractPlugin {
     private void onShow() {
         // If view loaded (and was inactive)
         if (this.view != null && !this.isActive) {
+            buttonListener.start(mContext, keyEvent -> {
+                if (SystemProperties.isStratos3())
+                    if (keyEvent.getCode() == ButtonListener.S3_KEY_UP) {
+                        if (this.isActive) {
+                            //intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.SETTINGS);
+                            //mContext.startActivity(intent);
+                            settings.callOnClick();
+                        }
+                    }
+            });
             // If not the correct view
             // Refresh the view
             this.refreshView();
+            Toast.makeText(mContext, "onShow", Toast.LENGTH_SHORT).show();
         }
 
         // Save state
         this.isActive = true;
-
     }
 
     private void onHide() {
+        if (this.isActive) {
+            buttonListener.stop();
+            Toast.makeText(mContext, "onHide", Toast.LENGTH_SHORT).show();
+        }
         // Save state
         this.isActive = false;
-        //Logger.debug("AmazModLauncher onHide");
     }
 
     @Override
