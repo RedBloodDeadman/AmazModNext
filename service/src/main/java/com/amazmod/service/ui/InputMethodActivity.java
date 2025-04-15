@@ -13,10 +13,13 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.amazmod.service.R;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.ExecCommand;
+import com.amazmod.service.util.SystemProperties;
 
 import org.tinylog.Logger;
 
@@ -29,9 +32,11 @@ public class InputMethodActivity extends Activity {
     RadioGroup radioGroup;
     EditText  editText;
     Button button;
+    ScrollView radioScrollView;
 
     private Context mContext;
     private static String selectedIME;
+    private ButtonListener buttonListener = new ButtonListener();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -41,6 +46,7 @@ public class InputMethodActivity extends Activity {
         this.mContext = this;
         setContentView(R.layout.activity_inputmethod);
 
+        radioScrollView = findViewById(R.id.radio_scrollview);
         linearLayout = findViewById(R.id.radio_linearlayout);
         title = findViewById(R.id.radio_textview);
         radioGroup = findViewById(R.id.radio_group);
@@ -51,7 +57,7 @@ public class InputMethodActivity extends Activity {
         setButtonTheme(button, getResources().getString(R.string.close));
 
         updateContent();
-
+        setupBtnListener();
     }
 
     private void updateContent(){
@@ -119,4 +125,43 @@ public class InputMethodActivity extends Activity {
         button.setBackground(mContext.getDrawable(R.drawable.reply_grey));
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        buttonListener.stop();
+    }
+
+    boolean isMainViewShow = false;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    private void setupBtnListener() {
+        Activity activity = this;
+        buttonListener.start(activity, keyEvent -> {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isMainViewShow && SystemProperties.isStratos3())
+                        switch (keyEvent.getCode()) {
+                            case ButtonListener.S3_KEY_MIDDLE_UP:
+                                radioScrollView.smoothScrollTo(radioScrollView.getScrollX(), radioScrollView.getScrollY() - 100);
+                                break;
+                            case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                                radioScrollView.smoothScrollTo(radioScrollView.getScrollX(), radioScrollView.getScrollY() + 100);
+                                break;
+                        }
+                }
+            });
+        });
+    }
 }

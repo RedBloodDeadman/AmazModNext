@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.amazmod.service.R;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.DeviceUtil;
 import com.amazmod.service.util.ExecCommand;
 import com.amazmod.service.util.SystemProperties;
@@ -58,6 +60,9 @@ public class ScreenSettingsActivity extends Activity {
 
     private static String defaultDensity;
 
+    private ScrollView scrollView;
+    private ButtonListener buttonListener = new ButtonListener();
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,6 +70,8 @@ public class ScreenSettingsActivity extends Activity {
 
         this.mContext = this;
         setContentView(R.layout.activity_screen_settings);
+
+        scrollView = findViewById(R.id.scrollView);
 
         header = findViewById(R.id.activity_screen_settings_header);
         message = findViewById(R.id.activity_screen_settings_message);
@@ -96,12 +103,19 @@ public class ScreenSettingsActivity extends Activity {
 
         updateContent();
 
+        setupBtnListener();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        buttonListener.stop();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
+        isMainViewShow = true;
         Logger.info("ScreenSettingsActivity onResume");
         updateContent();
     }
@@ -389,4 +403,31 @@ public class ScreenSettingsActivity extends Activity {
 
     }
 
+    boolean isMainViewShow = false;
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    private void setupBtnListener() {
+        Activity activity = this;
+        buttonListener.start(activity, keyEvent -> {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isMainViewShow && SystemProperties.isStratos3())
+                        switch (keyEvent.getCode()) {
+                            case ButtonListener.S3_KEY_MIDDLE_UP:
+                                scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() - 100);
+                                break;
+                            case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                                scrollView.smoothScrollTo(scrollView.getScrollX(), scrollView.getScrollY() + 100);
+                                break;
+                        }
+                }
+            });
+        });
+    }
 }

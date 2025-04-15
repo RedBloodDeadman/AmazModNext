@@ -18,6 +18,9 @@ import android.view.animation.AnimationUtils;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.amazmod.service.R;
 import com.amazmod.service.adapters.NotificationListAdapter;
@@ -25,7 +28,9 @@ import com.amazmod.service.helper.RecyclerTouchListener;
 import com.amazmod.service.support.NotificationInfo;
 import com.amazmod.service.support.NotificationStore;
 import com.amazmod.service.ui.NotificationWearActivity;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.DeviceUtil;
+import com.amazmod.service.util.SystemProperties;
 
 import org.tinylog.Logger;
 
@@ -60,6 +65,7 @@ public class WearNotificationsFragment extends Fragment {
     //private static final String CLEAR = "Clear";
     public static final String ANIMATE = "animate";
 
+    private ButtonListener buttonListener = new ButtonListener();
 
     @Override
     public void onAttach(Activity activity) {
@@ -97,6 +103,7 @@ public class WearNotificationsFragment extends Fragment {
         super.onResume();
         Logger.info("WearNotificationsFragment onResume");
         updateNotificationsList();
+        isMainViewShow = true;
     }
 
     private void updateNotificationsList() {
@@ -115,6 +122,7 @@ public class WearNotificationsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         Logger.info("WearNotificationsFragment onViewCreated");
         init();
+        setupBtnListener();
     }
 
     @Override
@@ -127,11 +135,54 @@ public class WearNotificationsFragment extends Fragment {
         super.onDestroy();
     }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        buttonListener.stop();
+    }
+
+    boolean isMainViewShow = false;
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    int pos = 0;
+    private void setupBtnListener() {
+        buttonListener.start(mContext, keyEvent -> {
+            if (isMainViewShow && SystemProperties.isStratos3())
+                switch (keyEvent.getCode()) {
+                    case ButtonListener.S3_KEY_MIDDLE_UP:
+                        if (pos > 0) {
+                            pos--;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                        if (pos < notificationInfoList.size() - 1) {
+                            pos++;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_UP:
+                        this.getActivity().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                onItemClick(pos);
+                            }
+                        });
+                        break;
+                }
+        });
+    }
+
     public void onItemClick(int position) {
 
         Logger.info("WearNotificationsFragment onClick position: " + position);
 
         if (getResources().getString(R.string.refresh).equals(notificationInfoList.get(position).getNotificationTitle())) {
+            pos = 0;
             mAdapter = null;
             notificationInfoList.clear();
             listView.setVisibility(View.GONE);
@@ -145,6 +196,7 @@ public class WearNotificationsFragment extends Fragment {
                     .setMessage(mContext.getResources().getString(R.string.confirmation))
                     .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int whichButton) {
+                            pos = 0;
                             NotificationStore.clear();
                             resetNotificationsCounter();
                             getActivity().finish();
@@ -164,6 +216,7 @@ public class WearNotificationsFragment extends Fragment {
     }
 
     private void init() {
+        pos = 0;
         rootLayout = getActivity().findViewById(R.id.wear_notifications_main_layout);
         wearNotificationsFrameLayout = getActivity().findViewById(R.id.wear_notifications_frame_layout);
         listView = getActivity().findViewById(R.id.wear_notifications_list);

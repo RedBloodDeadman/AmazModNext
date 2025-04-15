@@ -54,11 +54,11 @@ public class WidgetsUtil {
         }
     }
 
-    public static void loadWidgetList(final Context context){
-        loadSettings(context,false); // Doesn't save to the original list
+    public static ArrayList<BaseSetting> loadWidgetList(final Context context){
+        return loadSettings(context,false); // Doesn't save to the original list
     }
 
-    private static void loadSettings(final Context context, boolean saveOriginalList) {
+    private static ArrayList<BaseSetting> loadSettings(final Context context, boolean saveOriginalList) {
 
         SettingsManager settingsManager = new SettingsManager(context);
         String last_widget_order_in = settingsManager.getString(Constants.PREF_AMAZMOD_OFFICIAL_WIDGETS_ORDER, "");
@@ -311,6 +311,8 @@ public class WidgetsUtil {
 
         //Save initial config (to keep amazmod in first position)
         save(context,false, false);
+
+        return settingList;
     }
 
     public static JSONArray getWidgetsLists(Context context, boolean searchForCustomWidgets){

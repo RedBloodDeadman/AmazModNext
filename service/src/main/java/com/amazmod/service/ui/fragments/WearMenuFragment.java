@@ -33,8 +33,10 @@ import com.amazmod.service.events.incoming.RevokeAdminOwner;
 import com.amazmod.service.models.MenuItems;
 import com.amazmod.service.springboard.LauncherWearGridActivity;
 import com.amazmod.service.springboard.WidgetSettings;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.DeviceUtil;
 import com.amazmod.service.util.ExecCommand;
+import com.amazmod.service.util.SystemProperties;
 import com.huami.watch.transport.DataBundle;
 
 import org.greenrobot.eventbus.EventBus;
@@ -58,7 +60,6 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
     List<MenuItems> items;
 
 
-
     private BroadcastReceiver receiverConnection, receiverSSID;
     private Context mContext;
     private MenuListAdapter mAdapter;
@@ -75,7 +76,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
     private static final String MENU_LPM = "lpm";
     private static final String MENU_REVOKE_ADMIN = "revoke_adm";
 
-
+    private ButtonListener buttonListener = new ButtonListener();
 
     @Override
     public void onAttach(Activity activity) {
@@ -95,7 +96,6 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
         Logger.info("WearMenuFragment onCreateView");
-
         return inflater.inflate(R.layout.fragment_wear_menu, container, false);
     }
 
@@ -106,7 +106,13 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
 
         init();
         updateContent();
+        setupBtnListener();
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        buttonListener.stop();
     }
 
     @Override
@@ -116,6 +122,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
     }
 
     private void init() {
+        pos = 0;
         wfmgr = (WifiManager) mContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         vibrator = (Vibrator) mContext.getSystemService(VIBRATOR_SERVICE);
 
@@ -401,8 +408,11 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
 
     @Override
     public void onClick(WearableListView.ViewHolder viewHolder) {
+        onClickPerform(viewHolder.getPosition());
+    }
 
-        MenuItems item = items.get(viewHolder.getPosition());
+    private void onClickPerform(int position) {
+        MenuItems item = items.get(position);
 
         Logger.debug("executing action: TYPE " + item.getActionType() + " // ACTION: " + item.getAction());
 
@@ -440,8 +450,8 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
         }
     }
 
-    private void runCustomCommand(MenuItems item){
-        switch(item.getAction()){
+    private void runCustomCommand(MenuItems item) {
+        switch (item.getAction()) {
             case MENU_WIFI:
                 if (wfmgr.isWifiEnabled()) {
                     items.get(0).setState(false);
@@ -476,7 +486,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
 
     }
 
-    private void runCustomCommandDelay(MenuItems item){
+    private void runCustomCommandDelay(MenuItems item) {
         currentItem = item;
         beginCountdown();
     }
@@ -542,7 +552,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
      * Starts the DelayedConfirmationView when user presses "Start Timer" button.
      */
     public void beginCountdown() {
-        if (currentItem.getAction() == MENU_LPM){
+        if (currentItem.getAction() == MENU_LPM) {
             new AlertDialog.Builder(getActivity())
                     .setMessage(R.string.low_power_mode_warning)
                     .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
@@ -583,7 +593,7 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
         }, 1000);
 
 
-        switch(currentItem.getActionType()){
+        switch (currentItem.getActionType()) {
             case MenuItems.ACTION_CUSTOM_DELAY:
                 switch (currentItem.getAction()) {
                     case MENU_CLEAN_MEMORY:
@@ -725,8 +735,53 @@ public class WearMenuFragment extends Fragment implements WearableListView.Click
         }
         mAdapter.notifyDataSetChanged();
     }
+
     public static WearMenuFragment newInstance() {
         Logger.info("WearMenuFragment newInstance");
         return new WearMenuFragment();
+    }
+
+    boolean isMainViewShow = false;
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    int pos = 0;
+    private void setupBtnListener() {
+        Activity activity = this.getActivity();
+        buttonListener.start(mContext, keyEvent -> {
+            if (isMainViewShow && SystemProperties.isStratos3())
+                switch (keyEvent.getCode()) {
+                    case ButtonListener.S3_KEY_MIDDLE_UP:
+                        if (pos > 0) {
+                            pos--;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                        if (pos < items.size() - 1) {
+                            pos++;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_UP:
+                        if (activity != null)
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    onClickPerform(pos);
+                                }
+                            });
+                        break;
+                }
+        });
     }
 }

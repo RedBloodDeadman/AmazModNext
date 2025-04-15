@@ -15,11 +15,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.amazmod.service.Constants;
 import com.amazmod.service.R;
 import com.amazmod.service.springboard.WidgetSettings;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.SystemProperties;
 
 import org.tinylog.Logger;
@@ -36,13 +38,15 @@ import static android.content.Context.WIFI_SERVICE;
 
 public class WearInfoFragment extends Fragment {
 
-    BoxInsetLayout mainLayout;
+    private BoxInsetLayout mainLayout;
+    private ScrollView wearInfoScrollLayout;
 	private Button buttonClose;
     private TextView build, timeSLCTV, upTime, sleepTime, memory, currentIP;
 
     private Context mContext;
 
     private static String timeSLC;
+    private ButtonListener buttonListener = new ButtonListener();
 
     @Override
     public void onAttach(Activity activity) {
@@ -74,7 +78,13 @@ public class WearInfoFragment extends Fragment {
         Logger.info("WearInfoFragment onViewCreated");
 
         updateContent();
+        setupBtnListener();
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        buttonListener.stop();
     }
 
     @Override
@@ -118,6 +128,7 @@ public class WearInfoFragment extends Fragment {
 
         timeSLC = dateDiff.toString();
 
+        wearInfoScrollLayout = getActivity().findViewById(R.id.wear_info_scroll_layout);
         build = getActivity().findViewById(R.id.wear_info_build);
         timeSLCTV = getActivity().findViewById(R.id.wear_info_timeSLC);
         upTime = getActivity().findViewById(R.id.wear_info_textView02);
@@ -217,5 +228,39 @@ public class WearInfoFragment extends Fragment {
     public static WearInfoFragment newInstance() {
         Logger.info("WearInfoFragment newInstance");
         return new WearInfoFragment();
+    }
+
+    boolean isMainViewShow = false;
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    private void setupBtnListener() {
+        Activity activity = this.getActivity();
+        buttonListener.start(activity, keyEvent -> {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isMainViewShow && SystemProperties.isStratos3())
+                        switch (keyEvent.getCode()) {
+                            case ButtonListener.S3_KEY_MIDDLE_UP:
+                                wearInfoScrollLayout.smoothScrollTo(wearInfoScrollLayout.getScrollX(), wearInfoScrollLayout.getScrollY() - 100);
+                                break;
+                            case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                                wearInfoScrollLayout.smoothScrollTo(wearInfoScrollLayout.getScrollX(), wearInfoScrollLayout.getScrollY() + 100);
+                                break;
+                        }
+                }
+            });
+        });
     }
 }

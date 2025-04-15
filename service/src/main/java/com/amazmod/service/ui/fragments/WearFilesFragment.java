@@ -32,9 +32,11 @@ import com.amazmod.service.adapters.AppInfoAdapter;
 import com.amazmod.service.helper.RecyclerTouchListener;
 import com.amazmod.service.support.AppInfo;
 import com.amazmod.service.ui.FileViewerWebViewActivity;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.CaseInsensitiveFileComparator;
 import com.amazmod.service.util.DeviceUtil;
 import com.amazmod.service.util.ExecCommand;
+import com.amazmod.service.util.SystemProperties;
 
 import org.tinylog.Logger;
 
@@ -73,6 +75,8 @@ public class WearFilesFragment extends Fragment {
     private static final String JPG_MIME = "image/jpeg";
     private static final String TXT_MIME = "text/plain";
 
+    private ButtonListener buttonListener = new ButtonListener();
+
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -100,7 +104,13 @@ public class WearFilesFragment extends Fragment {
         Logger.info("WearFilesFragment onViewCreated");
 
         init();
+        setupBtnListener();
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        buttonListener.stop();
     }
 
     @Override
@@ -114,19 +124,19 @@ public class WearFilesFragment extends Fragment {
     }
 
     public void onItemClick(int position) {
-
         final String fileName = fileInfoList.get(position).getAppName();
         String filePath = fileInfoList.get(position).getVersionName();
 
         Logger.info("WearFilesFragment onItemClick filePath: " + filePath);
 
         if (PARENT_DIR.equals(fileName) && PARENT_DIR.equals(filePath)) {
+            pos = 0;
             mAdapter.clear();
             mCurrentDir = getPreviousDir();
             loadFiles(mCurrentDir, true);
 
         } else if (getResources().getString(R.string.refresh).equals(fileName) && getResources().getString(R.string.refresh).equals(filePath)) {
-
+            pos = 0;
             if (!(fileInfoList == null))
                 fileInfoList.clear();
 
@@ -137,9 +147,10 @@ public class WearFilesFragment extends Fragment {
             File file = new File(filePath);
             if (file.exists()) {
 
-                if (file.isDirectory())
+                if (file.isDirectory()) {
+                    pos = 0;
                     changeDir(file);
-                else
+                } else
                     openFile(file);
 
             }
@@ -166,7 +177,7 @@ public class WearFilesFragment extends Fragment {
     }
 
     private void init() {
-
+        pos = 0;
         wearFilesFrameLayout = getActivity().findViewById(R.id.wear_files_frame_layout);
         listView = getActivity().findViewById(R.id.wear_files_list);
         mHeader = getActivity().findViewById(R.id.wear_files_header);
@@ -286,6 +297,7 @@ public class WearFilesFragment extends Fragment {
     }
 
     private void openFile(File file) {
+        showToast(mContext.getResources().getString(R.string.opening) + " " + file.getName());
 
         Uri fileUri = Uri.fromFile(file);
         Logger.debug("WearFilesFragment openFile fileUri: " + fileUri.toString());
@@ -615,4 +627,47 @@ public class WearFilesFragment extends Fragment {
         return new WearFilesFragment();
     }
 
+    boolean isMainViewShow = false;
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    int pos = 0;
+    private void setupBtnListener() {
+        Activity activity = this.getActivity();
+        buttonListener.start(mContext, keyEvent -> {
+            if (isMainViewShow && SystemProperties.isStratos3())
+                switch (keyEvent.getCode()) {
+                    case ButtonListener.S3_KEY_MIDDLE_UP:
+                        if (pos > 0) {
+                            pos--;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                        if (pos < fileInfoList.size() - 1) {
+                            pos++;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_UP:
+                        if (activity != null)
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    onItemClick(pos);
+                                }
+                            });
+                        break;
+                }
+        });
+    }
 }

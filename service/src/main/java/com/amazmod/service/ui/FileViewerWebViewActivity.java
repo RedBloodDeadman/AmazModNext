@@ -9,6 +9,8 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import com.amazmod.service.R;
+import com.amazmod.service.util.ButtonListener;
+import com.amazmod.service.util.SystemProperties;
 
 
 public class FileViewerWebViewActivity extends Activity {
@@ -20,6 +22,8 @@ public class FileViewerWebViewActivity extends Activity {
     public static final String FILE_URI = "fileUri";
     public static final String MIME_TYPE = "mimeType";
     public static final String IMAGE = "image";
+
+    private ButtonListener buttonListener = new ButtonListener();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,7 +47,13 @@ public class FileViewerWebViewActivity extends Activity {
             frameLayoutImage.setVisibility(View.GONE);
             loadWebView(fileUri, webviewText, false);
         }
+        setupBtnListener();
+    }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        buttonListener.stop();
     }
 
     private void loadWebView(String fileUri, WebView webView, boolean isImage) {
@@ -66,11 +76,49 @@ public class FileViewerWebViewActivity extends Activity {
 
     }
 
-    private class WebViewClient extends android.webkit.WebViewClient {
+
+    private static class WebViewClient extends android.webkit.WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             return super.shouldOverrideUrlLoading(view, url);
         }
     }
 
+    boolean isMainViewShow = false;
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    private void setupBtnListener() {
+        Activity activity = this;
+        buttonListener.start(activity, keyEvent -> {
+            activity.runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (isMainViewShow && SystemProperties.isStratos3())
+                        switch (keyEvent.getCode()) {
+                            case ButtonListener.S3_KEY_MIDDLE_UP:
+                                if (webviewText.getScrollY() > 0)
+                                    webviewText.scrollTo(webviewText.getScrollX(), webviewText.getScrollY() - 50);
+                                if (webviewImage.getScrollY() > 0)
+                                    webviewImage.scrollTo(webviewImage.getScrollX(), webviewImage.getScrollY() - 50);
+                                break;
+                            case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                                webviewText.scrollTo(webviewText.getScrollX(), webviewText.getScrollY() + 50);
+                                webviewImage.scrollTo(webviewImage.getScrollX(), webviewImage.getScrollY() + 50);
+                                break;
+                        }
+                }
+            });
+        });
+    }
 }

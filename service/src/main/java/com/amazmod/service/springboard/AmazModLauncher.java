@@ -155,7 +155,9 @@ public class AmazModLauncher extends AbstractPlugin {
 
         return this.view;
     }
+
     private CircledImageView settings = null;
+
     private void init() {
 
         Logger.trace("AmazModLauncher init");
@@ -677,19 +679,15 @@ public class AmazModLauncher extends AbstractPlugin {
         // If view loaded (and was inactive)
         if (this.view != null && !this.isActive) {
             buttonListener.start(mContext, keyEvent -> {
-                if (SystemProperties.isStratos3())
+                if (this.isActive && SystemProperties.isStratos3())
                     if (keyEvent.getCode() == ButtonListener.S3_KEY_UP) {
-                        if (this.isActive) {
-                            //intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.SETTINGS);
-                            //mContext.startActivity(intent);
-                            settings.callOnClick();
-                        }
+                        intent.putExtra(LauncherWearGridActivity.MODE, LauncherWearGridActivity.SETTINGS);
+                        mContext.startActivity(intent);
                     }
             });
             // If not the correct view
             // Refresh the view
             this.refreshView();
-            Toast.makeText(mContext, "onShow", Toast.LENGTH_SHORT).show();
         }
 
         // Save state
@@ -699,7 +697,6 @@ public class AmazModLauncher extends AbstractPlugin {
     private void onHide() {
         if (this.isActive) {
             buttonListener.stop();
-            Toast.makeText(mContext, "onHide", Toast.LENGTH_SHORT).show();
         }
         // Save state
         this.isActive = false;

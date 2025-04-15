@@ -35,7 +35,9 @@ import com.amazmod.service.adapters.AppInfoAdapter;
 import com.amazmod.service.events.incoming.RevokeAdminOwner;
 import com.amazmod.service.helper.RecyclerTouchListener;
 import com.amazmod.service.support.AppInfo;
+import com.amazmod.service.util.ButtonListener;
 import com.amazmod.service.util.ExecCommand;
+import com.amazmod.service.util.SystemProperties;
 import com.huami.watch.transport.DataBundle;
 
 import org.greenrobot.eventbus.EventBus;
@@ -84,6 +86,8 @@ public class WearAppsFragment extends Fragment {
     private final int UNINSTALL_REQUEST_CODE = 1;
     //private static final String REFRESH = "Refresh";
 
+    private ButtonListener buttonListener = new ButtonListener();
+
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
@@ -113,7 +117,13 @@ public class WearAppsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         Logger.info("WearAppsFragment onViewCreated");
         updateContent();
+        setupBtnListener();
+    }
 
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        buttonListener.stop();
     }
 
     @Override
@@ -552,5 +562,49 @@ public class WearAppsFragment extends Fragment {
     public static WearAppsFragment newInstance() {
         Logger.info("WearAppsFragment newInstance");
         return new WearAppsFragment();
+    }
+
+    boolean isMainViewShow = false;
+    @Override
+    public void onPause() {
+        super.onPause();
+        isMainViewShow = false;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        isMainViewShow = true;
+    }
+
+    int pos = 0;
+    private void setupBtnListener() {
+        Activity activity = this.getActivity();
+        buttonListener.start(mContext, keyEvent -> {
+            if (isMainViewShow && SystemProperties.isStratos3())
+                switch (keyEvent.getCode()) {
+                    case ButtonListener.S3_KEY_MIDDLE_UP:
+                        if (pos > 0) {
+                            pos--;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_MIDDLE_DOWN:
+                        if (pos < appInfoList.size() - 1) {
+                            pos++;
+                            listView.smoothScrollToPosition(pos);
+                        }
+                        break;
+                    case ButtonListener.S3_KEY_UP:
+                        if (activity != null)
+                            activity.runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    onItemClick(pos);
+                                }
+                            });
+                        break;
+                }
+        });
     }
 }
