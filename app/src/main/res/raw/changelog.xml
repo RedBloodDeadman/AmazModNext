@@ -1,5 +1,13 @@
 <changelog>
     <release
+        date="2025-04-22"
+        versionCode="236"
+        versionName="v1.2.9">
+        <new>Added button control for all views on Stratos 3</new>
+        <bugfix>Fixed Sleep As Android integration (Accelerometer + HR)</bugfix>
+        <info>Removed remote photo due to uselessness</info>
+    </release>
+    <release
         date="2024-08-28"
         versionCode="235"
         versionName="v1.2.8">
