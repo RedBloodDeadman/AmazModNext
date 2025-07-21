@@ -554,6 +554,11 @@ public class NotificationService extends NotificationListenerService {
         return mode;
     }
 
+    public boolean isIncomingCall(Notification notification) {
+        if (Notification.CATEGORY_CALL.equals(notification.category)) return true;
+        return notification.fullScreenIntent != null;
+    }
+
     private byte filter(StatusBarNotification statusBarNotification) {
         if (notificationTimeGone == null)
             notificationTimeGone = new ArrayMap<>();
@@ -565,8 +570,13 @@ public class NotificationService extends NotificationListenerService {
         boolean localAllowed = false;
         boolean whitelistedApp = false;
 
-        NotificationCompat.WearableExtender wearableExtender = new NotificationCompat.WearableExtender(notification);
+        //NotificationCompat.WearableExtender wearableExtender = new NotificationCompat.WearableExtender(notification);
         //List<NotificationCompat.Action> actions = wearableExtender.getActions();
+
+        if (isIncomingCall(notification)) {
+            Logger.debug("[Marked] Notification marked as FLAG_ONGOING_EVENT (CALL)");
+            return Constants.FILTER_ONGOING;
+        }
 
         if (NotificationCompat.isGroupSummary(notification)) {
             //Logger.debug("filter isGroupSummary: " + notificationPackage);
