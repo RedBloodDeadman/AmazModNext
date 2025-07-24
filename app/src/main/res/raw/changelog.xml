@@ -1,5 +1,11 @@
 <changelog>
     <release
+        date="2025-07-24"
+        versionCode="237"
+        versionName="v1.2.10">
+        <bugfix>Fixed VoIP calls</bugfix>
+    </release>
+    <release
         date="2025-04-22"
         versionCode="236"
         versionName="v1.2.9">
