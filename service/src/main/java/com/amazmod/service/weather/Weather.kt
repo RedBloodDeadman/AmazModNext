@@ -197,8 +197,7 @@ object Weather {
                     if (this.time_format == "24") {
                         systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR_OF_DAY)) //24
                     }else{
-                        val amPm = getAmPm(cal)
-                        systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR).toString() + " " + amPm) //12
+                        systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR)) //12
                     }
                     systemJsonDataMCU.put("sunriseMin", cal.get(Calendar.MINUTE))
                 }
@@ -211,8 +210,7 @@ object Weather {
                     if (this.time_format == "24") {
                         systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR_OF_DAY)) //24
                     }else{
-                        val amPm = getAmPm(cal)
-                        systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR).toString() + " " + amPm) //12
+                        systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR)) //12
                     }
 
                     systemJsonDataMCU.put("sunsetMin", cal.get(Calendar.MINUTE))
@@ -258,15 +256,6 @@ object Weather {
             Logger.error("[Weather API] Updating system weather data error: {}", e)
             // Data haven't been updated
             return DATA_HAVE_NOT_UPDATE
-        }
-    }
-
-    private fun getAmPm(cal: Calendar): String {
-        val am_pm: Int = cal.get(Calendar.AM_PM)
-        return if (am_pm == 0) {
-            "AM"
-        } else {
-            "PM"
         }
     }
 

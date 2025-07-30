@@ -1,9 +1,10 @@
 <changelog>
     <release
-        date="2025-07-24"
+        date="2025-07-30"
         versionCode="237"
         versionName="v1.2.10">
         <bugfix>Fixed VoIP calls</bugfix>
+        <bugfix>Fixed sunset/sunrise time format (12/24)</bugfix>
     </release>
     <release
         date="2025-04-22"
