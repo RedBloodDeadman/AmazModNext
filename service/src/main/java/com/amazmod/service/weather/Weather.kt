@@ -10,6 +10,7 @@ import org.tinylog.Logger
 import java.util.*
 
 object Weather {
+    private var time_format: String = "12"
     var MAIN_URI = "WeatherInfo"
     var SECONDARY_URI = "WeatherCheckedSummary"
     var MCU_URI = "McuWeatherInfo"
@@ -25,6 +26,7 @@ object Weather {
     @JvmOverloads
     @JvmStatic
     fun updateWeatherData(context: Context, new_weather_data: String, clear_previous_values: Boolean = false, expire: Long? = null): String {
+        this.time_format = Settings.System.getString(context.contentResolver, "time_12_24");
         try {
             // Check if correct form of JSON
             val jsonData = JSONObject(new_weather_data)
@@ -192,7 +194,12 @@ object Weather {
                 if(mcu){
                     val cal = Calendar.getInstance()
                     cal.timeInMillis = jsonData.getInt("sunrise")*1000L
-                    systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR))
+                    if (this.time_format == "24") {
+                        systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR_OF_DAY)) //24
+                    }else{
+                        val amPm = getAmPm(cal)
+                        systemJsonDataMCU.put("sunriseHour", cal.get(Calendar.HOUR).toString() + " " + amPm) //12
+                    }
                     systemJsonDataMCU.put("sunriseMin", cal.get(Calendar.MINUTE))
                 }
             }
@@ -200,8 +207,14 @@ object Weather {
                 systemJsonData.put("sunset", jsonData.getInt("sunset"))
                 if(mcu){
                     val cal = Calendar.getInstance()
-                    cal.timeInMillis = jsonData.getInt("sunset")*1000L
-                    systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR))
+                    cal.timeInMillis = jsonData.getInt("sunset") * 1000L
+                    if (this.time_format == "24") {
+                        systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR_OF_DAY)) //24
+                    }else{
+                        val amPm = getAmPm(cal)
+                        systemJsonDataMCU.put("sunsetHour", cal.get(Calendar.HOUR).toString() + " " + amPm) //12
+                    }
+
                     systemJsonDataMCU.put("sunsetMin", cal.get(Calendar.MINUTE))
                 }
             }
@@ -245,6 +258,15 @@ object Weather {
             Logger.error("[Weather API] Updating system weather data error: {}", e)
             // Data haven't been updated
             return DATA_HAVE_NOT_UPDATE
+        }
+    }
+
+    private fun getAmPm(cal: Calendar): String {
+        val am_pm: Int = cal.get(Calendar.AM_PM)
+        return if (am_pm == 0) {
+            "AM"
+        } else {
+            "PM"
         }
     }
 
