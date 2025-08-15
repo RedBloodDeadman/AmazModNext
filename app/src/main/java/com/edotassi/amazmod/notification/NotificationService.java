@@ -92,7 +92,8 @@ public class NotificationService extends NotificationListenerService {
             "org.thoughtcrime.securesms",
             "eu.siacs.conversations",
             "com.whatsapp",
-            "com.discord"
+            "com.discord",
+            "sputnik.axmor.com"
     };
 
     private ArrayMap<String, String> notificationTimeGone;
