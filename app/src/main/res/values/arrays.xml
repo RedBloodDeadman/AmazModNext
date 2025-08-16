@@ -348,4 +348,18 @@
         <item>Celsius (Metric)</item>
         <item>Imperial (Fahrenheit)</item>
     </string-array>
+
+    <string-array name="voice_app_list">
+        <item>com.skype.m2</item>
+        <item>com.skype.raider</item>
+        <item>org.telegram.messenger</item>
+        <item>org.telegram.plus</item>
+        <item>org.thunderdog.challegram</item>
+        <item>com.viber.voip</item>
+        <item>org.thoughtcrime.securesms</item>
+        <item>eu.siacs.conversations</item>
+        <item>com.whatsapp</item>
+        <item>com.discord</item>
+        <item>sputnik.axmor.com</item>
+    </string-array>
 </resources>

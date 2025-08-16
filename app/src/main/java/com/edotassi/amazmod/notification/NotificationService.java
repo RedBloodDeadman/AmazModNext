@@ -23,6 +23,7 @@ import androidx.collection.ArrayMap;
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
 
+import com.edotassi.amazmod.R;
 import com.edotassi.amazmod.db.model.NotificationEntity;
 import com.edotassi.amazmod.db.model.NotificationPreferencesEntity;
 import com.edotassi.amazmod.db.model.NotificationPreferencesEntity_Table;
@@ -49,9 +50,11 @@ import org.greenrobot.eventbus.ThreadMode;
 import org.tinylog.Logger;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import amazmod.com.transport.Constants;
 import amazmod.com.transport.Transport;
@@ -82,19 +85,7 @@ public class NotificationService extends NotificationListenerService {
             "com.skype.raider"
     };
 
-    private static final String[] VOICE_APP_LIST = { //apps may use voice calls without notifications
-            "com.skype.m2",
-            "com.skype.raider",
-            "org.telegram.messenger",
-            "org.telegram.plus",
-            "org.thunderdog.challegram",
-            "com.viber.voip",
-            "org.thoughtcrime.securesms",
-            "eu.siacs.conversations",
-            "com.whatsapp",
-            "com.discord",
-            "sputnik.axmor.com"
-    };
+    private Set<String> voiceAppSet;
 
     private ArrayMap<String, String> notificationTimeGone;
     private ArrayMap<String, StatusBarNotification> notificationsAvailableToReply;
@@ -116,6 +107,8 @@ public class NotificationService extends NotificationListenerService {
 
         EventBus.getDefault().register(this);
 
+        initVoiceAppSet(this);
+
         notificationsAvailableToReply = new ArrayMap<>();
 
         NotificationStore notificationStore = new NotificationStore();
@@ -126,6 +119,11 @@ public class NotificationService extends NotificationListenerService {
         Logger.debug("onCreate");
 
         startPersistentNotification();
+    }
+
+    private void initVoiceAppSet(Context context) {
+        String[] apps = context.getResources().getStringArray(R.array.voice_app_list);
+        voiceAppSet = new HashSet<>(Arrays.asList(apps));
     }
 
     @Override
@@ -671,13 +669,19 @@ public class NotificationService extends NotificationListenerService {
     }*/
 
     private boolean isRingingNotification(byte filterResult, String notificationPackage) {
-
         final boolean prefs = Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_ENABLE_VOICE_APPS, false);
         final int ring = isRinging();
-        return ((filterResult == Constants.FILTER_ONGOING)
-                && ((prefs && (ring == AudioManager.MODE_RINGTONE))
-                || ((Arrays.binarySearch(VOICE_APP_LIST, notificationPackage) >= 0) && (ring == AudioManager.MODE_NORMAL))
-                || ((notificationPackage.contains("skype")) && (ring == AudioManager.MODE_IN_COMMUNICATION))));
+        boolean isOngoing = filterResult == Constants.FILTER_ONGOING;
+        boolean isRingtone = prefs && ring == AudioManager.MODE_RINGTONE;
+        boolean isInAppList = voiceAppSet.contains(notificationPackage);
+        boolean isNormalInVoipList = isInAppList && ring == AudioManager.MODE_NORMAL;
+        boolean isSkype = notificationPackage.contains("skype") && ring == AudioManager.MODE_IN_COMMUNICATION;
+        boolean result = isOngoing
+                && (isRingtone
+                || isNormalInVoipList
+                || isSkype);
+        Logger.debug("isRingingNotification: " + result);
+        return result;
     }
 
     private boolean isMapsNotification(byte filterResult, String notificationPackage) {
