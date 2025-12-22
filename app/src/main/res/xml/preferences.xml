@@ -26,7 +26,6 @@
         <ListPreference
             app:iconSpaceReserved="false"
             android:defaultValue="1"
-            android:dependency="preference.notifications.enable.custom.ui"
             android:dialogTitle="Data transfer method"
             android:entries="@array/pref_amazmodservice_data_transfer_entries"
             android:entryValues="@array/pref_amazmodservice_data_transfer_values"

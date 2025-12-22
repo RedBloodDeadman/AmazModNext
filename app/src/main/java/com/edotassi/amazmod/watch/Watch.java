@@ -16,7 +16,6 @@ import com.edotassi.amazmod.event.ResultDeleteFile;
 import com.edotassi.amazmod.event.ResultDownloadFileChunk;
 import com.edotassi.amazmod.event.ResultShellCommand;
 import com.edotassi.amazmod.event.ResultWidgets;
-import com.edotassi.amazmod.event.Sleep;
 import com.edotassi.amazmod.event.WatchStatus;
 import com.edotassi.amazmod.support.DownloadHelper;
 import com.edotassi.amazmod.support.PermissionsHelper;
@@ -44,6 +43,7 @@ import amazmod.com.transport.Constants;
 import amazmod.com.transport.Transport;
 import amazmod.com.transport.Transportable;
 import amazmod.com.transport.data.BrightnessData;
+import amazmod.com.transport.data.MediaData;
 import amazmod.com.transport.data.NotificationData;
 import amazmod.com.transport.data.RequestDeleteFileData;
 import amazmod.com.transport.data.RequestDirectoryData;
@@ -348,6 +348,19 @@ public class Watch {
             public Object then(@NonNull Task<TransportService> task) {
                 if (task.getResult() != null)
                     task.getResult().send(Transport.INCOMING_NOTIFICATION, notificationData, taskCompletionSource);
+                return null;
+            }
+        });
+        return taskCompletionSource.getTask();
+    }
+
+    public Task<Void> postMediaInfo(final MediaData mediaData) {
+        final TaskCompletionSource<Void> taskCompletionSource = new TaskCompletionSource<>();
+        getServiceInstance().continueWith(new Continuation<TransportService, Object>() {
+            @Override
+            public Object then(@NonNull Task<TransportService> task) {
+                if (task.getResult() != null)
+                    task.getResult().send(Transport.POST_MEDIA_INFO, mediaData, taskCompletionSource);
                 return null;
             }
         });

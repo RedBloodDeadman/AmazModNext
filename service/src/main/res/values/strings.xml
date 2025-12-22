@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name" translatable="false">AmazModService</string>
     <string name="launcher_name" translatable="false">AmazModLauncher</string>
+    <string name="music_control_name" translatable="false">AmazModMusic</string>
     <string name="title_activity_main" translatable="false">MainActivity</string>
     <string name="title_activity_notification" translatable="false">NotificationActivity</string>
     <string name="last_charge">Since full charge</string>

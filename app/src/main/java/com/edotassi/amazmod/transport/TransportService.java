@@ -23,6 +23,7 @@ import com.edotassi.amazmod.AmazModApplication;
 import com.edotassi.amazmod.event.BatteryStatus;
 import com.edotassi.amazmod.event.Directory;
 import com.edotassi.amazmod.event.FtpOnStateChanged;
+import com.edotassi.amazmod.event.GetMediaInfo;
 import com.edotassi.amazmod.event.NextMusic;
 import com.edotassi.amazmod.event.NotificationAction;
 import com.edotassi.amazmod.event.NotificationIntent;
@@ -137,6 +138,7 @@ public class TransportService extends Service implements Transporter.DataListene
         put(Transport.VOL_UP, VolUp.class);
         put(Transport.VOL_MUTE, VolMute.class);
         put(Transport.TOGGLE_MUSIC, ToggleMusic.class);
+        put(Transport.GET_MEDIA_INFO, GetMediaInfo.class);
         put(Transport.DIRECTORY, Directory.class);
         put(Transport.RESULT_DELETE_FILE, ResultDeleteFile.class);
         put(Transport.RESULT_DOWNLOAD_FILE_CHUNK, ResultDownloadFileChunk.class);

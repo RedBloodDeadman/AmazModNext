@@ -1,5 +1,11 @@
 <changelog>
     <release
+        date="2025-12-22"
+        versionCode="238"
+        versionName="v1.2.11">
+        <new>Added information about the content being played to the music controls</new>
+    </release>
+    <release
         date="2025-07-30"
         versionCode="237"
         versionName="v1.2.10">

@@ -9,6 +9,7 @@ import android.view.KeyEvent;
 
 import com.edotassi.amazmod.event.BatteryStatus;
 import com.edotassi.amazmod.event.FtpOnStateChanged;
+import com.edotassi.amazmod.event.GetMediaInfo;
 import com.edotassi.amazmod.event.NextMusic;
 import com.edotassi.amazmod.event.NotificationAction;
 import com.edotassi.amazmod.event.NotificationIntent;
@@ -33,6 +34,7 @@ import com.edotassi.amazmod.event.local.OnApStateChangedLocal;
 import com.edotassi.amazmod.event.local.ReplyToNotificationLocal;
 import com.edotassi.amazmod.event.local.SleepDataLocal;
 import com.edotassi.amazmod.helpers.BatteryHelper;
+import com.edotassi.amazmod.notification.media.MediaHelper;
 import com.edotassi.amazmod.support.SilenceApplicationHelper;
 
 import org.greenrobot.eventbus.EventBus;
@@ -156,6 +158,12 @@ public class TransportListener {
             KeyEvent upEvent = new KeyEvent(eventtime, eventtime, KeyEvent.ACTION_UP, KeyEvent.KEYCODE_MEDIA_PLAY, 0);
             mAudioManager.dispatchMediaKeyEvent(upEvent);
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.BACKGROUND)
+    public void getMediaInfo(GetMediaInfo getMediaInfo) {
+        Logger.debug("Received getMediaInfo action!");
+        MediaHelper.postMedia(context);
     }
 
     @Subscribe(threadMode = ThreadMode.BACKGROUND)

@@ -361,5 +361,7 @@
         <item>com.whatsapp</item>
         <item>com.discord</item>
         <item>sputnik.axmor.com</item>
+        <item>com.yandex.yamb</item>
+        <item>ru.oneme.app</item>
     </string-array>
 </resources>

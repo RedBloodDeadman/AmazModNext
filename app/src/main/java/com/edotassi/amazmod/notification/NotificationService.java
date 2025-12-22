@@ -1,5 +1,8 @@
 package com.edotassi.amazmod.notification;
 
+import static com.edotassi.amazmod.notification.VolumeUtils.getMusicVolume;
+import static com.edotassi.amazmod.notification.factory.NotificationFactory.getAppIcon;
+
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,14 +14,22 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSession;
+import android.media.session.PlaybackState;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
+import android.util.Log;
 
+import androidx.annotation.Nullable;
 import androidx.collection.ArrayMap;
 import androidx.core.app.NotificationCompat;
 import androidx.preference.PreferenceManager;
@@ -31,10 +42,11 @@ import com.edotassi.amazmod.event.local.ActionToNotificationLocal;
 import com.edotassi.amazmod.event.local.IntentToNotificationLocal;
 import com.edotassi.amazmod.event.local.ReplyToNotificationLocal;
 import com.edotassi.amazmod.notification.factory.NotificationFactory;
+import com.edotassi.amazmod.notification.media.MediaDataStore;
 import com.edotassi.amazmod.support.SilenceApplicationHelper;
 import com.edotassi.amazmod.transport.TransportService;
 import com.edotassi.amazmod.util.ActionsHolder;
-import com.edotassi.amazmod.util.NotificationUtils;
+import com.edotassi.amazmod.util.FilesUtil;
 import com.edotassi.amazmod.util.PendingIntentHolder;
 import com.edotassi.amazmod.util.Screen;
 import com.edotassi.amazmod.watch.Watch;
@@ -49,6 +61,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.tinylog.Logger;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -58,15 +71,18 @@ import java.util.Set;
 
 import amazmod.com.transport.Constants;
 import amazmod.com.transport.Transport;
+import amazmod.com.transport.data.MediaData;
 import amazmod.com.transport.data.NotificationActionData;
 import amazmod.com.transport.data.NotificationData;
 import amazmod.com.transport.data.NotificationIntentData;
 import amazmod.com.transport.data.NotificationReplyData;
+import amazmod.com.transport.util.ImageUtils;
 
 import static java.lang.Math.abs;
 
 public class NotificationService extends NotificationListenerService {
 
+    public static final String TAG = "NotificationService";
     public static final int FLAG_WEARABLE_REPLY = 0x00000001;
     private static final long BLOCK_INTERVAL = 60000 * 30L; //Thirty minutes
     private static final long REPEATING_BLOCK_INTERVAL = 60000 * 5L; //Five minutes
@@ -164,8 +180,10 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private String sbnCustomKeyLast = "";
+
     @Override
     public void onNotificationPosted(StatusBarNotification statusBarNotification) {
+        loadMediaInfo(statusBarNotification);
         String sbnCustomKey = getSbnCustomKey(statusBarNotification);
         Logger.debug("sbnCustomKey: " + sbnCustomKey);
         if (!sbnCustomKey.equals(sbnCustomKeyLast)) {
@@ -280,6 +298,165 @@ public class NotificationService extends NotificationListenerService {
         }
     }
 
+    private void loadMediaInfo(StatusBarNotification notification) {
+        MediaSession.Token token =
+                notification.getNotification().extras.getParcelable(Notification.EXTRA_MEDIA_SESSION);
+
+        if (token == null) {
+            return;
+        }
+
+        MediaController controller = new MediaController(this, token);
+
+        MediaMetadata metadata = controller.getMetadata();
+        PlaybackState state = controller.getPlaybackState();
+
+        if (metadata == null || state == null) {
+            return;
+        }
+
+        if (state.getState() == PlaybackState.STATE_PLAYING ||
+                state.getState() == PlaybackState.STATE_PAUSED ||
+                state.getState() == PlaybackState.STATE_STOPPED) {
+
+            String title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
+            String artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
+            long duration = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
+            String playState = getPlayState(state);
+            long position = getCurrentPosition(state);
+
+            // Обложка
+            byte[] albumArt = getAlbumArt(notification, metadata);
+
+            Drawable appIcon = getAppIcon(notification.getPackageName(), this);
+            byte[] smallIcon = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(appIcon), ImageUtils.smallIconQuality);
+            if (appIcon == null) smallIcon = null;
+
+            String[] extractActions = extractActions(notification);
+
+            String packageName = notification.getPackageName();
+            PackageManager pm = this.getPackageManager();
+            String appName = "";
+            try {
+                ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+                appName = pm.getApplicationLabel(appInfo).toString();
+            } catch (PackageManager.NameNotFoundException e) {
+                appName = "...";
+            }
+
+            VolumeInfo musicVolume = getMusicVolume(this);
+
+            long currentTimeMillis = System.currentTimeMillis();
+            Logger.debug("Notification currentTimeMillis: " + currentTimeMillis);
+            saveAndPostMediaInfo(new MediaData(
+                    notification.getId(),
+                    appName,
+                    title,
+                    artist,
+                    duration,
+                    position,
+                    playState,
+                    smallIcon,
+                    albumArt,
+                    extractActions,
+                    musicVolume.current,
+                    musicVolume.max,
+                    currentTimeMillis
+            ));
+        }
+    }
+
+    private byte[] getAlbumArt(StatusBarNotification notification, MediaMetadata metadata) {
+        boolean artIsFound = false;
+        Bitmap bitmapArt = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+        byte[] albumArt = ImageUtils.bitmap2bytesWebp(bitmapArt, ImageUtils.bigPictureQuality);
+        if (bitmapArt == null) {
+            //Big Picture
+            if (Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_IMAGES, Constants.PREF_NOTIFICATIONS_IMAGES_DEFAULT)) {
+                Bundle sbnBundle = notification.getNotification().extras;
+                if (sbnBundle.get(Notification.EXTRA_PICTURE) != null) {
+                    artIsFound = true;
+                    albumArt = ImageUtils.bitmap2bytesWebp((Bitmap) sbnBundle.get(Notification.EXTRA_PICTURE), ImageUtils.bigPictureQuality);
+                }
+            }
+            if (!artIsFound) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (notification.getNotification().getLargeIcon() != null) {
+                        artIsFound = true;
+                        albumArt = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(notification.getNotification().getLargeIcon().loadDrawable(this)), ImageUtils.largeIconQuality);
+                    }
+                } else {
+                    if (notification.getNotification().largeIcon != null) {
+                        artIsFound = true;
+                        albumArt = ImageUtils.bitmap2bytesWebp(notification.getNotification().largeIcon, ImageUtils.largeIconQuality);
+                    }
+                }
+            }
+        } else {
+            artIsFound = true;
+        }
+        if (!artIsFound) albumArt = null;
+        return albumArt;
+    }
+
+    private static void saveAndPostMediaInfo(MediaData mediaData) {
+        if (MediaDataStore.hasData()) {
+            MediaData oldData = MediaDataStore.get();
+            if (oldData.equals(mediaData)) {
+                MediaDataStore.update(mediaData);
+                return;
+            }
+        }
+
+        MediaDataStore.update(mediaData);
+        Logger.debug("saveAndPostMediaInfo: " + mediaData.toString());
+        Watch.get().postMediaInfo(mediaData);
+    }
+
+    private static String[] extractActions(StatusBarNotification statusBarNotification) {
+        Notification notification = statusBarNotification.getNotification();
+        List<String> actionsTitles = new ArrayList<>();
+        if (notification.actions != null) {
+            for (int i = 0; i < notification.actions.length; i++) {
+                Notification.Action action = notification.actions[i];
+                actionsTitles.add(String.valueOf(action.title));
+            }
+        }
+
+        ActionsHolder.save(statusBarNotification.getId(), notification.actions);
+        return actionsTitles.toArray(new String[0]);
+    }
+
+    private long getCurrentPosition(PlaybackState state) {
+        if (state.getState() != PlaybackState.STATE_PLAYING) {
+            return state.getPosition();
+        }
+
+        long timeDelta = SystemClock.elapsedRealtime()
+                - state.getLastPositionUpdateTime();
+
+        return (long) (state.getPosition()
+                + timeDelta * state.getPlaybackSpeed());
+    }
+
+
+    private String getPlayState(PlaybackState state) {
+        switch (state.getState()) {
+            case PlaybackState.STATE_PLAYING:
+                return "PLAYING";
+            case PlaybackState.STATE_PAUSED:
+                return "PAUSED";
+            case PlaybackState.STATE_STOPPED:
+                return "STOPPED";
+            case PlaybackState.STATE_BUFFERING:
+                return "BUFFERING";
+            case PlaybackState.STATE_CONNECTING:
+                return "CONNECTING";
+            default:
+                return "UNKNOWN";
+        }
+    }
+
     // Remove notification from watch if it was removed from phone
     @Override
     public void onNotificationRemoved(final StatusBarNotification statusBarNotification) {
@@ -288,6 +465,18 @@ public class NotificationService extends NotificationListenerService {
             return;
 
         String key = statusBarNotification.getKey();
+
+        if (MediaDataStore.hasData()) {
+            MediaData mediaData = MediaDataStore.get();
+            int id = mediaData.getId();
+            if (statusBarNotification.getId() == id) {
+                saveAndPostMediaInfo(new MediaData(
+                        id,
+                        System.currentTimeMillis()
+                ));
+            }
+        }
+
 
         Logger.info("onNotificationRemoved Check settings");
         // Check settings

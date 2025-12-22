@@ -36,13 +36,11 @@ public class BootBroadcastReceiver extends BroadcastReceiver {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(new Intent(context, TransportService.class));
+            context.startForegroundService(new Intent(context, WatchfaceService.class));
         } else {
             context.startService(new Intent(context, TransportService.class));
+            context.startService(new Intent(context, WatchfaceService.class));
         }
-
-        // Initiate receivers after boot
-        BatteryStatusReceiver.startBatteryReceiver(context);
-        WatchfaceReceiver.startWatchfaceReceiver(context);
     }
 
 }

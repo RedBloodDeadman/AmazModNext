@@ -17,6 +17,8 @@ public class Transport {
     public static final String NAME_XDRIP = "com.eveningoutpost.dexdrip.wearintegration";
 
     public static final String INCOMING_NOTIFICATION = "incoming_notification";
+    public static final String POST_MEDIA_INFO = "post_media_info";
+    public static final String GET_MEDIA_INFO = "get_media_info";
     public static final String DELETE_NOTIFICATION = "del";
     public static final String REQUEST_WATCHSTATUS = "request_watchstatus";
     public static final String REQUEST_BATTERYSTATUS = "request_batterystatus";

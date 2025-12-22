@@ -10,9 +10,7 @@ import android.support.wearable.view.BoxInsetLayout;
 import android.support.wearable.view.DotsPageIndicator;
 import android.support.wearable.view.SwipeDismissFrameLayout;
 import android.view.MotionEvent;
-import android.widget.Toast;
 
-import com.amazmod.service.AmazModService;
 import com.amazmod.service.R;
 import com.amazmod.service.adapters.GridViewPagerAdapter;
 import com.amazmod.service.support.ActivityFinishRunnable;
@@ -25,12 +23,7 @@ import com.amazmod.service.ui.fragments.WearInfoFragment;
 import com.amazmod.service.ui.fragments.WearMenuFragment;
 import com.amazmod.service.ui.fragments.WearMusicFragment;
 import com.amazmod.service.ui.fragments.WearNotificationsFragment;
-import com.amazmod.service.util.ButtonListener;
-import com.amazmod.service.util.SystemProperties;
 
-import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 import org.tinylog.Logger;
 
 import java.util.ArrayList;

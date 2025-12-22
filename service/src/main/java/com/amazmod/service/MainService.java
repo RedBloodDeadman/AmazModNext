@@ -28,6 +28,7 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -46,6 +47,7 @@ import com.amazmod.service.events.SilenceApplicationEvent;
 import com.amazmod.service.events.incoming.Brightness;
 import com.amazmod.service.events.incoming.DeleteNotificationEvent;
 import com.amazmod.service.events.incoming.EnableLowPower;
+import com.amazmod.service.events.incoming.IncomingMediaEvent;
 import com.amazmod.service.events.incoming.IncomingNotificationEvent;
 import com.amazmod.service.events.incoming.RequestBatteryStatus;
 import com.amazmod.service.events.incoming.RequestDeleteFile;
@@ -59,13 +61,13 @@ import com.amazmod.service.events.incoming.RevokeAdminOwner;
 import com.amazmod.service.events.incoming.SleepDataBundle;
 import com.amazmod.service.events.incoming.SyncSettings;
 import com.amazmod.service.events.incoming.Watchface;
+import com.amazmod.service.helper.MediaDataManager;
 import com.amazmod.service.music.MusicControlInputListener;
 import com.amazmod.service.notifications.NotificationService;
 import com.amazmod.service.receiver.AdminReceiver;
 import com.amazmod.service.receiver.NotificationReplyAndActionReceiver;
 import com.amazmod.service.settings.SettingsManager;
 import com.amazmod.service.sleep.alarm.alarmActivity;
-import com.amazmod.service.sleep.alarm.alarmReceiver;
 import com.amazmod.service.sleep.sleepStore;
 import com.amazmod.service.sleep.sleepUtils;
 import com.amazmod.service.springboard.WidgetSettings;
@@ -117,6 +119,7 @@ import amazmod.com.transport.data.BrightnessData;
 import amazmod.com.transport.data.DirectoryData;
 import amazmod.com.transport.data.FileData;
 import amazmod.com.transport.data.FileUploadData;
+import amazmod.com.transport.data.MediaData;
 import amazmod.com.transport.data.NotificationData;
 import amazmod.com.transport.data.RequestDeleteFileData;
 import amazmod.com.transport.data.RequestDirectoryData;
@@ -469,6 +472,7 @@ public class MainService extends Service implements Transporter.DataListener {
         put(Transport.SYNC_SETTINGS, SyncSettings.class);
         put(Transport.SLEEP_DATA, SleepDataBundle.class);
         put(Transport.INCOMING_NOTIFICATION, IncomingNotificationEvent.class);
+        put(Transport.POST_MEDIA_INFO, IncomingMediaEvent.class);
         put(Transport.REQUEST_WATCHSTATUS, RequestWatchStatus.class);
         put(Transport.REQUEST_BATTERYSTATUS, RequestBatteryStatus.class);
         put(Transport.BRIGHTNESS, Brightness.class);
@@ -1021,6 +1025,15 @@ public class MainService extends Service implements Transporter.DataListener {
 
         Logger.debug("MainService incomingNotification: " + notificationData.toString());
         notificationManager.post(notificationData);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void incomingMediaInfo(IncomingMediaEvent incomingMediaEvent) {
+        MediaData mediaData = MediaData.fromDataBundle(incomingMediaEvent.getDataBundle());
+
+        Log.d("MainService", String.valueOf(mediaData));
+        //EventBus.getDefault().post(new MediaEvent(mediaData));
+        MediaDataManager.getInstance().updateData(mediaData);
     }
 
     // Watch Info/Status request
