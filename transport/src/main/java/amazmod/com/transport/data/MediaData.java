@@ -36,7 +36,7 @@ public class MediaData extends Transportable implements Parcelable {
     private String artist;
     private long duration;
     private long position;
-    private String playState;
+    private String playState = "STOPPED";
     private byte[] smallIcon;
     private byte[] albumArt;
     private String[] actionTitles;

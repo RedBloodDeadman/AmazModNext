@@ -12,7 +12,7 @@ import amazmod.com.transport.data.MediaData;
 
 public class MediaHelper {
 
-    public static void postMedia(Context context){
+    public static void postMedia(Context context) {
         if (MediaDataStore.hasData()) {
             MediaData mediaData = MediaDataStore.get();
 
@@ -22,6 +22,8 @@ public class MediaHelper {
 
             Log.d("MediaHelper", mediaData.toString());
             Watch.get().postMediaInfo(mediaData);
+        } else {
+            Watch.get().postMediaInfo(new MediaData());
         }
     }
 }

@@ -63,6 +63,7 @@ import org.tinylog.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.List;
@@ -179,7 +180,27 @@ public class NotificationService extends NotificationListenerService {
         return key;
     }
 
+    private String getSbnMediaCustomKey(StatusBarNotification statusBarNotification) {
+        String key = statusBarNotification.getKey();
+        key += statusBarNotification.getNotification().when;
+        CharSequence charSequence = statusBarNotification.getNotification().extras.getCharSequence(Notification.EXTRA_TEXT);
+        if (charSequence != null) {
+            key += charSequence.toString();
+        }
+        MediaSession.Token token =
+                statusBarNotification.getNotification().extras.getParcelable(Notification.EXTRA_MEDIA_SESSION);
+
+        if (token != null) {
+            MediaController controller = new MediaController(this, token);
+            PlaybackState state = controller.getPlaybackState();
+            if (state != null)
+                key += state.getState();
+        }
+        return key;
+    }
+
     private String sbnCustomKeyLast = "";
+    private String sbnMediaCustomKeyLast = "";
 
     @Override
     public void onNotificationPosted(StatusBarNotification statusBarNotification) {
@@ -299,37 +320,45 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void loadMediaInfo(StatusBarNotification notification) {
-        MediaSession.Token token =
-                notification.getNotification().extras.getParcelable(Notification.EXTRA_MEDIA_SESSION);
+        String sbnCustomKey = getSbnMediaCustomKey(notification);
+        if (!sbnCustomKey.equals(sbnMediaCustomKeyLast)) {
+            sbnMediaCustomKeyLast = sbnCustomKey;
+            MediaSession.Token token =
+                    notification.getNotification().extras.getParcelable(Notification.EXTRA_MEDIA_SESSION);
 
-        if (token == null) {
-            return;
-        }
+            if (token == null) {
+                return;
+            }
 
-        MediaController controller = new MediaController(this, token);
+            MediaController controller = new MediaController(this, token);
 
-        MediaMetadata metadata = controller.getMetadata();
-        PlaybackState state = controller.getPlaybackState();
+            MediaMetadata metadata = controller.getMetadata();
+            PlaybackState state = controller.getPlaybackState();
 
-        if (metadata == null || state == null) {
-            return;
-        }
-
-        if (state.getState() == PlaybackState.STATE_PLAYING ||
-                state.getState() == PlaybackState.STATE_PAUSED ||
-                state.getState() == PlaybackState.STATE_STOPPED) {
+            if (metadata == null || state == null) {
+                return;
+            }
+            String playState = getPlayState(state);
+            if (playState.equals("BUFFERING")) {
+                long currentTimeMillis = System.currentTimeMillis();
+                Logger.debug("Notification currentTimeMillis: " + currentTimeMillis);
+                sendPlayState(notification.getId(), playState, currentTimeMillis);
+                return;
+            }
 
             String title = metadata.getString(MediaMetadata.METADATA_KEY_TITLE);
             String artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST);
             long duration = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION);
-            String playState = getPlayState(state);
             long position = getCurrentPosition(state);
 
             // Обложка
-            byte[] albumArt = getAlbumArt(notification, metadata);
+            byte[] albumArt = null;
+            byte[] smallIcon = null;
+            albumArt = getAlbumArt(notification, metadata);
 
             Drawable appIcon = getAppIcon(notification.getPackageName(), this);
-            byte[] smallIcon = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(appIcon), ImageUtils.smallIconQuality);
+            smallIcon = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(appIcon), ImageUtils.smallIconQuality);
+
             if (appIcon == null) smallIcon = null;
 
             String[] extractActions = extractActions(notification);
@@ -348,7 +377,7 @@ public class NotificationService extends NotificationListenerService {
 
             long currentTimeMillis = System.currentTimeMillis();
             Logger.debug("Notification currentTimeMillis: " + currentTimeMillis);
-            saveAndPostMediaInfo(new MediaData(
+            boolean freshData = saveAndPostMediaInfo(new MediaData(
                     notification.getId(),
                     appName,
                     title,
@@ -356,61 +385,99 @@ public class NotificationService extends NotificationListenerService {
                     duration,
                     position,
                     playState,
-                    smallIcon,
-                    albumArt,
+                    null,
+                    null,
                     extractActions,
                     musicVolume.current,
                     musicVolume.max,
                     currentTimeMillis
             ));
+            if (freshData && playState.contains("PLAYING")) {
+                Watch.get().postMediaInfo(new MediaData(
+                        notification.getId(),
+                        "",
+                        "",
+                        "",
+                        0,
+                        0,
+                        "ART",
+                        smallIcon,
+                        albumArt,
+                        Collections.singletonList("").toArray(new String[0]),
+                        0,
+                        0,
+                        currentTimeMillis
+                ));
+            }
         }
+    }
+
+    private static void sendPlayState(int id, String playState, long currentTimeMillis) {
+        Watch.get().postMediaInfo(new MediaData(
+                0,
+                "",
+                "",
+                "",
+                0,
+                0,
+                playState,
+                null,
+                null,
+                Collections.singletonList("").toArray(new String[0]),
+                0,
+                0,
+                currentTimeMillis
+        ));
     }
 
     private byte[] getAlbumArt(StatusBarNotification notification, MediaMetadata metadata) {
         boolean artIsFound = false;
-        Bitmap bitmapArt = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
-        byte[] albumArt = ImageUtils.bitmap2bytesWebp(bitmapArt, ImageUtils.bigPictureQuality);
-        if (bitmapArt == null) {
-            //Big Picture
-            if (Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_IMAGES, Constants.PREF_NOTIFICATIONS_IMAGES_DEFAULT)) {
+        byte[] albumArt = null;
+        if (Prefs.getBoolean(Constants.PREF_NOTIFICATIONS_IMAGES, Constants.PREF_NOTIFICATIONS_IMAGES_DEFAULT)) {
+            Bitmap bitmapArt = metadata.getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART);
+            albumArt = ImageUtils.bitmap2bytesWebp(bitmapArt, ImageUtils.bigPictureQuality);
+            if (bitmapArt == null) {
+                //Big Picture
+
                 Bundle sbnBundle = notification.getNotification().extras;
                 if (sbnBundle.get(Notification.EXTRA_PICTURE) != null) {
                     artIsFound = true;
                     albumArt = ImageUtils.bitmap2bytesWebp((Bitmap) sbnBundle.get(Notification.EXTRA_PICTURE), ImageUtils.bigPictureQuality);
                 }
-            }
-            if (!artIsFound) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    if (notification.getNotification().getLargeIcon() != null) {
-                        artIsFound = true;
-                        albumArt = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(notification.getNotification().getLargeIcon().loadDrawable(this)), ImageUtils.largeIconQuality);
-                    }
-                } else {
-                    if (notification.getNotification().largeIcon != null) {
-                        artIsFound = true;
-                        albumArt = ImageUtils.bitmap2bytesWebp(notification.getNotification().largeIcon, ImageUtils.largeIconQuality);
+
+                if (!artIsFound) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        if (notification.getNotification().getLargeIcon() != null) {
+                            artIsFound = true;
+                            albumArt = ImageUtils.bitmap2bytesWebp(ImageUtils.drawableToBitmap(notification.getNotification().getLargeIcon().loadDrawable(this)), ImageUtils.largeIconQuality);
+                        }
+                    } else {
+                        if (notification.getNotification().largeIcon != null) {
+                            artIsFound = true;
+                            albumArt = ImageUtils.bitmap2bytesWebp(notification.getNotification().largeIcon, ImageUtils.largeIconQuality);
+                        }
                     }
                 }
+            } else {
+                artIsFound = true;
             }
-        } else {
-            artIsFound = true;
         }
         if (!artIsFound) albumArt = null;
         return albumArt;
     }
 
-    private static void saveAndPostMediaInfo(MediaData mediaData) {
+    private static boolean saveAndPostMediaInfo(MediaData mediaData) {
         if (MediaDataStore.hasData()) {
             MediaData oldData = MediaDataStore.get();
             if (oldData.equals(mediaData)) {
                 MediaDataStore.update(mediaData);
-                return;
+                return false;
             }
         }
-
         MediaDataStore.update(mediaData);
         Logger.debug("saveAndPostMediaInfo: " + mediaData.toString());
         Watch.get().postMediaInfo(mediaData);
+        return true;
     }
 
     private static String[] extractActions(StatusBarNotification statusBarNotification) {
@@ -470,10 +537,28 @@ public class NotificationService extends NotificationListenerService {
             MediaData mediaData = MediaDataStore.get();
             int id = mediaData.getId();
             if (statusBarNotification.getId() == id) {
-                saveAndPostMediaInfo(new MediaData(
+                long currentTimeMillis = System.currentTimeMillis();
+                boolean freshData = saveAndPostMediaInfo(new MediaData(
                         id,
-                        System.currentTimeMillis()
+                        currentTimeMillis
                 ));
+                if (freshData) {
+                    Watch.get().postMediaInfo(new MediaData(
+                            0,
+                            "",
+                            "",
+                            "",
+                            0,
+                            0,
+                            "ART",
+                            null,
+                            null,
+                            Collections.singletonList("").toArray(new String[0]),
+                            0,
+                            0,
+                            currentTimeMillis
+                    ));
+                }
             }
         }
 

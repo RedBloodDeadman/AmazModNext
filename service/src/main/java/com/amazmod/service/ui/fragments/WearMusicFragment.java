@@ -34,9 +34,9 @@ import com.huami.watch.transport.TransporterClassic;
 import org.greenrobot.eventbus.EventBus;
 import org.tinylog.Logger;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import amazmod.com.transport.Transport;
 import amazmod.com.transport.data.MediaData;
@@ -48,49 +48,19 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
     private Context mContext;
     private View mView;
     private MarqueeTextView title, name, appName;
-    private TextView currentTime, maxTime;
-    private ProgressBar volumeProgress, timeProgress;
+    private ProgressBar volumeProgress, progressBar;
     private ImageView playPause, next, prev, volUp, volDown, like, dislike;
     private ButtonListener btnListener = new ButtonListener();
     private ImageView albumArt, albumArtFull, appIcon;
 
     private MediaData mediaData = null;
+    private MediaData mediaDataForDiff = null;
 
     private ISpringBoardHostStub host = null;
 
     private boolean nowPlaying = false;
 
     private int currentVol, maxVol = 0;
-
-    private boolean isRunning = false;
-    private long currentProgress = 0;
-    private long maxProgress = 0;
-
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final Runnable updateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (isRunning && currentProgress < maxProgress) {
-                currentProgress += 1000;
-                updateTimeProgress(currentProgress);
-
-                // Запускаем снова через 1 секунду
-                handler.postDelayed(this, 1000);
-            }
-        }
-    };
-
-    private void startProgress() {
-        if (!isRunning) {
-            isRunning = true;
-            handler.post(updateRunnable);
-        }
-    }
-
-    private void stopProgress() {
-        isRunning = false;
-        handler.removeCallbacks(updateRunnable);
-    }
 
     //Spotify, СберЗвук, Я.Музыка, YouTube
     private static List<String> likeList = Arrays.asList("Добавить в любимые", "Кнопка like", "Поставить отметку \"Нравится\"", "Поставить «Нравится»");
@@ -171,9 +141,7 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
         albumArtFull = mView.findViewById(R.id.albumArtFull);
         appIcon = mView.findViewById(R.id.appIcon);
         appName = mView.findViewById(R.id.appName);
-        currentTime = mView.findViewById(R.id.current_time);
-        maxTime = mView.findViewById(R.id.max_time);
-        timeProgress = mView.findViewById(R.id.time_progress);
+        progressBar = mView.findViewById(R.id.time_progress);
         like = mView.findViewById(R.id.like);
         dislike = mView.findViewById(R.id.dislike);
 
@@ -190,7 +158,7 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
         volUp.setOnClickListener(v -> volUp());
         volDown.setOnClickListener(v -> volDown());
 
-        updateLikeDislikeVisibility();
+        updateLikeDislikeVisibility(this.mediaData);
 
         like.setOnClickListener(view -> {
             sendLike(likeList);
@@ -200,7 +168,7 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
         });
     }
 
-    private void updateLikeDislikeVisibility() {
+    private void updateLikeDislikeVisibility(MediaData mediaData) {
         if (mediaData != null) {
             String containsLike = containsTitle(mediaData.getActionTitles(), likeList);
             String containsDislike = containsTitle(mediaData.getActionTitles(), dislikeList);
@@ -215,14 +183,18 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
     private void sendLike(List<String> list) {
         //loading(true);
         vibrate();
-        String title = containsTitle(mediaData.getActionTitles(), list);
-        if (!title.isEmpty()) {
-            EventBus.getDefault().post(new ActionNotificationEvent(mediaData.getId(), title));
-            Toast.makeText(mContext, "OK", Toast.LENGTH_SHORT).show();
+        if (mediaData != null) {
+            String title = containsTitle(mediaData.getActionTitles(), list);
+            if (!title.isEmpty()) {
+                EventBus.getDefault().post(new ActionNotificationEvent(mediaData.getId(), title));
+                Toast.makeText(mContext, "OK", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
     private void playPause() {
+        nowPlaying = !nowPlaying;
+        updatePlayPause();
         loading(true);
         vibrate();
         if (!transporter.isTransportServiceConnected()) transporter.connectTransportService();
@@ -231,10 +203,8 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
 
     private void updatePlayPause() {
         if (nowPlaying) {
-            startProgress();
             playPause.setBackgroundResource(R.drawable.baseline_pause_24);
         } else {
-            stopProgress();
             playPause.setBackgroundResource(R.drawable.baseline_play_arrow_24);
         }
     }
@@ -318,79 +288,82 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
 
     @Override
     public void onDataUpdated(MediaData mediaData) {
-        if (mediaData == null || (this.mediaData != null && this.mediaData.getTimestamp() > mediaData.getTimestamp())) {
+        if (mediaData == null || (this.mediaDataForDiff != null && this.mediaDataForDiff.getTimestamp() > mediaData.getTimestamp())) {
             loading(false);
             return;
         }
         Logger.trace("WearMusicFragment " + mediaData.toString());
-        updateLikeDislikeVisibility();
-
-        currentVol = mediaData.getVolume();
-        maxVol = mediaData.getMaxVolume();
-
-        title.setText(mediaData.getTitle());
-        name.setText(mediaData.getArtist());
-        appName.setText(mediaData.getAppName());
-
-        byte[] albumArt1 = mediaData.getAlbumArt();
-        Bitmap bitmap = ImageUtils.bytes2Bitmap(albumArt1);
-        if (bitmap != null) {
-            albumArt.setImageBitmap(bitmap);
-            albumArtFull.setImageBitmap(bitmap);
-        } else {
-            albumArt.setImageResource(R.drawable.baseline_music_note_24);
-            albumArtFull.setImageResource(R.mipmap.vinyl);
-        }
-
-        byte[] smallIcon = mediaData.getSmallIcon();
-        Bitmap smallIconBitmap = ImageUtils.bytes2Bitmap(smallIcon);
-
-        if (smallIconBitmap != null) {
-            appIcon.setImageBitmap(smallIconBitmap);
-        } else {
-            appIcon.setImageResource(R.mipmap.amazmod_small);
-        }
 
         String playState = mediaData.getPlayState();
         if (playState != null) {
-            nowPlaying = playState.contains("PLAYING") || playState.contains("BUFFERING");
-            updatePlayPause();
+
+            boolean isNewMediaOrState =
+                    this.mediaDataForDiff == null ||
+                            (this.mediaDataForDiff != null && !Objects.equals(this.mediaDataForDiff.getPlayState(), playState)) ||
+                            (this.mediaDataForDiff != null && this.mediaDataForDiff.getId() != mediaData.getId());
+            this.mediaDataForDiff = mediaData;
+
+            if (isNewMediaOrState) {
+                Logger.trace("NewMedia");
+                if (playState.contains("BUFFERING") || playState.contains("LOADING")) {
+                    Logger.trace("BUFFERING or LOADING");
+                    loading(true);
+                } else if (playState.contains("ART")) {
+                    byte[] albumArt1 = mediaData.getAlbumArt();
+                    Bitmap bitmap = ImageUtils.bytes2Bitmap(albumArt1);
+                    if (bitmap != null) {
+                        albumArt.setImageBitmap(bitmap);
+                        albumArtFull.setImageBitmap(bitmap);
+                    } else {
+                        albumArt.setImageResource(R.drawable.baseline_music_note_24);
+                        albumArtFull.setImageResource(R.mipmap.vinyl);
+                    }
+
+                    byte[] smallIcon = mediaData.getSmallIcon();
+                    Bitmap smallIconBitmap = ImageUtils.bytes2Bitmap(smallIcon);
+
+                    if (smallIconBitmap != null) {
+                        appIcon.setImageBitmap(smallIconBitmap);
+                    } else {
+                        appIcon.setImageResource(R.mipmap.amazmod_small);
+                    }
+                } else {
+                    this.mediaData = mediaData;
+                    updateLikeDislikeVisibility(mediaData);
+
+                    currentVol = mediaData.getVolume();
+                    maxVol = mediaData.getMaxVolume();
+
+                    title.setText(mediaData.getTitle());
+                    name.setText(mediaData.getArtist());
+                    appName.setText(mediaData.getAppName());
+
+                    nowPlaying = playState.contains("PLAYING");
+                    updatePlayPause();
+
+                    updateVolume(0);
+                }
+                loading(false);
+            } else {
+                Logger.trace("Something else...");
+                loading(false);
+            }
+        }else{
+            Logger.trace("PlayState is null.");
+            loading(false);
         }
-
-        updateVolume(0);
-        setTimeProgress(mediaData);
-
-        loading(false);
-
-        this.mediaData = mediaData;
-    }
-
-    private void setTimeProgress(MediaData mediaData) {
-        currentProgress = mediaData.getPosition();
-        maxProgress = mediaData.getDuration();
-
-        String durStr = TimeUtils.msToHumaTime(maxProgress);
-        timeProgress.setMax((int) maxProgress);
-        maxTime.setText(durStr);
-
-        updateTimeProgress(currentProgress);
-    }
-
-    private void updateTimeProgress(long current) {
-        String posStr = TimeUtils.msToHumaTime(current);
-        timeProgress.setProgress((int) current);
-        currentTime.setText(posStr);
     }
 
     private void loading(boolean now) {
-        timeProgress.setIndeterminate(now);
+        progressBar.setVisibility(now ? View.VISIBLE : View.GONE);
+        progressBar.setIndeterminate(now);
     }
 
     private void updateVolume(int delta) {
         int newVol = currentVol += delta;
         if (newVol >= 0 && newVol <= maxVol) {
-            volumeProgress.setProgress(newVol);
             volumeProgress.setMax(maxVol);
+            volumeProgress.setProgress(newVol);
         }
     }
 }
