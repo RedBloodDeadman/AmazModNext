@@ -42,8 +42,10 @@ import com.amazmod.service.events.HardwareButtonEvent;
 import com.amazmod.service.events.HourlyChime;
 import com.amazmod.service.events.IntentNotificationEvent;
 import com.amazmod.service.events.NightscoutDataEvent;
+import com.amazmod.service.events.NotificationStatus;
 import com.amazmod.service.events.ReplyNotificationEvent;
 import com.amazmod.service.events.SilenceApplicationEvent;
+import com.amazmod.service.events.incoming.ActionIncomingCall;
 import com.amazmod.service.events.incoming.Brightness;
 import com.amazmod.service.events.incoming.DeleteNotificationEvent;
 import com.amazmod.service.events.incoming.EnableLowPower;
@@ -62,6 +64,7 @@ import com.amazmod.service.events.incoming.SleepDataBundle;
 import com.amazmod.service.events.incoming.SyncSettings;
 import com.amazmod.service.events.incoming.Watchface;
 import com.amazmod.service.helper.MediaDataManager;
+import com.amazmod.service.helper.NotificationStatusManager;
 import com.amazmod.service.music.MusicControlInputListener;
 import com.amazmod.service.notifications.NotificationService;
 import com.amazmod.service.receiver.AdminReceiver;
@@ -144,6 +147,7 @@ public class MainService extends Service implements Transporter.DataListener {
     private static Transporter transporterGeneral,
             transporterNotifications,
             transporterHuami,
+            transporterHuamiCall,
             transporterXdrip,
             sleepTransporter;
 
@@ -342,6 +346,12 @@ public class MainService extends Service implements Transporter.DataListener {
         Logger.debug("MainService onCreate transporterHuamiNotification " + (!transporterHuami.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
         if (!transporterHuami.isTransportServiceConnected())
             transporterHuami.connectTransportService();
+        // Huami's call
+        transporterHuamiCall = TransporterClassic.get(this, "transport_module_calling_to_wear");
+        transporterHuamiCall.addDataListener(this);
+        Logger.debug("MainService onCreate transporterHuamiCall " + (!transporterHuamiCall.isTransportServiceConnected() ? "not connected, connecting..." : "already connected"));
+        if (!transporterHuamiCall.isTransportServiceConnected())
+            transporterHuamiCall.connectTransportService();
         // XDrip data
         transporterXdrip = TransporterClassic.get(this, "com.eveningoutpost.dexdrip.wearintegration");
         transporterXdrip.addDataListener(this);
@@ -441,6 +451,11 @@ public class MainService extends Service implements Transporter.DataListener {
             transporterHuami.disconnectTransportService();
             transporterHuami = null;
         }
+        if (transporterHuamiCall.isTransportServiceConnected()) {
+            Logger.debug("MainService onDestroy transporterHuamiCall disconnecting...");
+            transporterHuamiCall.disconnectTransportService();
+            transporterHuamiCall = null;
+        }
         if (transporterXdrip.isTransportServiceConnected()) {
             Logger.debug("MainService onDestroy transporterXdrip disconnecting...");
             transporterXdrip.disconnectTransportService();
@@ -486,6 +501,7 @@ public class MainService extends Service implements Transporter.DataListener {
         put(Transport.WATCHFACE_DATA, Watchface.class);
         put(Transport.REQUEST_WIDGETS, RequestWidgets.class);
         put(Transport.DELETE_NOTIFICATION, DeleteNotificationEvent.class);
+        put(Transport.ACTION_INCOMMING_CALL, ActionIncomingCall.class);
     }};
 
     @Override
@@ -564,6 +580,7 @@ public class MainService extends Service implements Transporter.DataListener {
                     if (key.equals(pair.getValue())) {
                         Logger.warn("deleteNotification removing: {}", pair.getKey());
                         NotificationStore.removeCustomNotification(pair.getKey(), context);
+                        NotificationStatusManager.getInstance().updateData(new NotificationStatus("del", pair.getKey()));
                     }
                 }
             else
@@ -1025,15 +1042,23 @@ public class MainService extends Service implements Transporter.DataListener {
 
         Logger.debug("MainService incomingNotification: " + notificationData.toString());
         notificationManager.post(notificationData);
+        NotificationStatusManager.getInstance().updateData(new NotificationStatus("add", notificationData.getKey()));
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void incomingMediaInfo(IncomingMediaEvent incomingMediaEvent) {
         MediaData mediaData = MediaData.fromDataBundle(incomingMediaEvent.getDataBundle());
 
-        Log.d("MainService", String.valueOf(mediaData));
+        Logger.debug(String.valueOf(mediaData));
         //EventBus.getDefault().post(new MediaEvent(mediaData));
         MediaDataManager.getInstance().updateData(mediaData);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void incomingCall(ActionIncomingCall actionIncomingCall) {
+        DataBundle dataBundle = actionIncomingCall.getDataBundle();
+
+        Logger.debug(dataBundle);
     }
 
     // Watch Info/Status request

@@ -532,6 +532,7 @@ public class NotificationService extends NotificationListenerService {
             return;
 
         String key = statusBarNotification.getKey();
+        String notificationPackage = statusBarNotification.getPackageName();
 
         if (MediaDataStore.hasData()) {
             MediaData mediaData = MediaDataStore.get();
@@ -562,111 +563,51 @@ public class NotificationService extends NotificationListenerService {
             }
         }
 
+        byte filterResult = filter(statusBarNotification);
+        boolean ringingNotification = isRingingNotification(filterResult, notificationPackage);
 
-        Logger.info("onNotificationRemoved Check settings");
-        // Check settings
-        if (!Prefs.getBoolean(Constants.PREF_ENABLE_NOTIFICATIONS, Constants.PREF_DEFAULT_ENABLE_NOTIFICATIONS)
-                || (Prefs.getBoolean(Constants.PREF_DISABLE_REMOVE_NOTIFICATIONS, false))) {
-            Logger.debug("[Notification Remove] Notification wont be removed due to current settings. (key: {})", key);
-            return;
-        }
-
-
-        Logger.info("onNotificationRemoved Check filters");
-        if (!(isPackageAllowed(statusBarNotification.getPackageName())
-                //&& (!NotificationCompat.isGroupSummary(statusBarNotification.getNotification()))
-                && ((statusBarNotification.getNotification().flags & Notification.FLAG_ONGOING_EVENT) != Notification.FLAG_ONGOING_EVENT))) {
-            Logger.debug("[Notification Remove] App {} is ignored: P || G || O", statusBarNotification.getPackageName());
-            return;
-        }
-
-        //Logger.debug("[Notification Remove] key {}", key);
-
-        /*
-        * Disabled while testing JobScheduler
-        *
-        // Connect transporter
-        if(!isJobSchedulerEnabled())
-        Transporter notificationTransporter = TransporterClassic.get(this, "com.huami.action.notification");
-        notificationTransporter.connectTransportService();
-        */
-
-        DataBundle dataBundle = new DataBundle();
-        dataBundle.putString("key", statusBarNotification.getKey());
-        Logger.info("onNotificationRemoved dataBundle: " + dataBundle);
-
-        String uuid = newKey(key);
-        NotificationStore.addRemovedNotification(uuid, dataBundle);
-        int id = NotificationJobService.NOTIFICATION_REMOVED;
-        int jobId = statusBarNotification.getId() + newUID();
-
-        Logger.info("onNotificationRemoved scheduleJob started");
-        scheduleJob(id, jobId, uuid);
-
-        Logger.debug("[Notification Remove] Remove scheduled. key {}, jobId: {}, uuid: {}", key, jobId, uuid);
-        //Logger.info("onNotificationRemoved jobScheduled: " + jobId + " \\ uuid: " + uuid);
-
-        /*
-        * Disabled while testing JobScheduler
-        *
-        notificationTransporter.send("del", dataBundle, new Transporter.DataSendResultCallback() {
-            @Override
-            public void onResultBack(DataTransportResult dataTransportResult) {
-                log.d(dataTransportResult.toString());
-                Logger.debug("NotificationService onNotificationRemoved id: " + statusBarNotification.getId());
+        if (!ringingNotification) {
+            Logger.info("onNotificationRemoved Check settings");
+            // Check settings
+            if (!Prefs.getBoolean(Constants.PREF_ENABLE_NOTIFICATIONS, Constants.PREF_DEFAULT_ENABLE_NOTIFICATIONS)
+                    || (Prefs.getBoolean(Constants.PREF_DISABLE_REMOVE_NOTIFICATIONS, false))) {
+                Logger.debug("[Notification Remove] Notification wont be removed due to current settings. (key: {})", key);
+                return;
             }
-        });
-        */
+
+
+            Logger.info("onNotificationRemoved Check filters");
+            if (!(isPackageAllowed(statusBarNotification.getPackageName())
+                    //&& (!NotificationCompat.isGroupSummary(statusBarNotification.getNotification()))
+                    && ((statusBarNotification.getNotification().flags & Notification.FLAG_ONGOING_EVENT) != Notification.FLAG_ONGOING_EVENT))) {
+                Logger.debug("[Notification Remove] App {} is ignored: P || G || O", statusBarNotification.getPackageName());
+                return;
+            }
+        }
+
+        sendDeleteCustomUINotification(statusBarNotification);
 
         // Check if notification is grouped
         if (grouped_notifications.containsKey(statusBarNotification.getId())) {
-            //Logger.debug("NotificationService onNotificationRemoved ungroup01 key: " + statusBarNotification.getKey() + " \\ id: " + statusBarNotification.getId());
+            Logger.debug("NotificationService onNotificationRemoved ungroup01 key: " + statusBarNotification.getKey() + " \\ id: " + statusBarNotification.getId());
             // Initial array
             int[] grouped = grouped_notifications.get(statusBarNotification.getId());
-            //Logger.debug("NotificationService onNotificationRemoved ungroup02 key: " + statusBarNotification.getKey()  + " \\ grouped: " + Arrays.toString(grouped));
+            Logger.debug("NotificationService onNotificationRemoved ungroup02 key: " + statusBarNotification.getKey() + " \\ grouped: " + Arrays.toString(grouped));
 
             // Loop each notification in group
             assert grouped != null;
             for (int groupedId : grouped) {
                 //int nextId = abs((int) (long) (statusBarNotification.getId() % 10000L)) + i;
-                jobId = groupedId + newUID();
-                //Logger.debug("NotificationService onNotificationRemoved ungroup i: " + groupedId);
 
-                dataBundle = new DataBundle();
                 StatusBarNotification sbn = new StatusBarNotification(statusBarNotification.getPackageName(), "",
                         groupedId, statusBarNotification.getTag(), 0, 0, 0,
                         statusBarNotification.getNotification(), statusBarNotification.getUser(),
                         statusBarNotification.getPostTime());
-                dataBundle.putString("key", sbn.getKey());
-                Logger.info("onNotificationRemoved dataBundle: " + dataBundle);
 
-                uuid = newKey(statusBarNotification.getKey());
-                NotificationStore.addRemovedNotification(uuid, dataBundle);
-
-                scheduleJob(id, jobId, uuid);
-
-                Logger.info("onNotificationRemoved ungroup jobScheduled: " + jobId + " \\ uuid: " + uuid);
-
-                /*
-                * Disabled while testing JobScheduler
-                *
-                notificationTransporter.send("del", dataBundle, new Transporter.DataSendResultCallback() {
-                    @Override
-                    public void onResultBack(DataTransportResult dataTransportResult) {
-                        log.d(dataTransportResult.toString());
-                    }
-                });
-                */
+                sendDeleteCustomUINotification(sbn);
             }
             grouped_notifications.remove(statusBarNotification.getId());
         }
-
-        /*
-        * Disabled while testing JobScheduler
-        *
-        //Disconnect transporter to avoid leaking
-        notificationTransporter.disconnectTransportService();
-        */
 
         //Reset time of last notification when notification is removed
         if (lastTimeNotificationArrived > 0) {
@@ -706,6 +647,30 @@ public class NotificationService extends NotificationListenerService {
             // Send notification directly
             Watch.get().postNotification(notificationData);
             Logger.info("sendNotificationWithCustomUI sent without schedule: " + statusBarNotification.getKey());
+        }
+    }
+
+    private void sendDeleteCustomUINotification(StatusBarNotification statusBarNotification) {
+        if (isJobSchedulerEnabled()) {
+            String key = statusBarNotification.getKey();
+            DataBundle dataBundle = new DataBundle();
+            dataBundle.putString("key", statusBarNotification.getKey());
+            Logger.info("onNotificationRemoved dataBundle: " + dataBundle);
+
+            String uuid = newKey(key);
+            NotificationStore.addRemovedNotification(uuid, dataBundle);
+            int id = NotificationJobService.NOTIFICATION_REMOVED;
+            int jobId = statusBarNotification.getId() + newUID();
+
+            Logger.info("onNotificationRemoved scheduleJob started");
+            scheduleJob(id, jobId, uuid);
+
+            Logger.debug("[Notification Remove] Remove scheduled. key {}, jobId: {}, uuid: {}", key, jobId, uuid);
+        } else {
+            NotificationData notificationData = NotificationFactory.fromStatusBarNotification(this, statusBarNotification, true);
+            // Send notification directly
+            Watch.get().deleteNotification(notificationData);
+            Logger.info("sendDeleteCustomUINotification sent without schedule: " + statusBarNotification.getKey());
         }
     }
 

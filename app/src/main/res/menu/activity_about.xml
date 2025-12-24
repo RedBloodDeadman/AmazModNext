@@ -12,6 +12,9 @@
                 <item
                     android:id="@+id/action_activity_about_notification_test"
                     android:title="AmazfitNotification" />
+                <item
+                    android:id="@+id/action_activity_about_call_test"
+                    android:title="Standart Call" />
             </menu>
         </item>
     </group>

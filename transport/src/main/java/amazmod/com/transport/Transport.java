@@ -17,6 +17,7 @@ public class Transport {
     public static final String NAME_XDRIP = "com.eveningoutpost.dexdrip.wearintegration";
 
     public static final String INCOMING_NOTIFICATION = "incoming_notification";
+    public static final String INCOMING_CALL = "incoming_call";
     public static final String POST_MEDIA_INFO = "post_media_info";
     public static final String GET_MEDIA_INFO = "get_media_info";
     public static final String DELETE_NOTIFICATION = "del";
@@ -68,6 +69,8 @@ public class Transport {
     public static final String HTTP_REQUEST = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_REQUEST";
     public static final String HTTP_PINGBACK = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_PINGBACK";
     public static final String HTTP_RESULT = "com.huami.watch.companion.transport.amazfitcommunication.HTTP_RESULT";
+
+    public static final String ACTION_INCOMMING_CALL = "transport_module_calling_to_wear.ACTION_INCOMMING_CALL";
 
 
     public static final String WIFI_FTP_ENABLE = "enable_ftp";

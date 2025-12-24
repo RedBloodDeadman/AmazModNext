@@ -354,6 +354,19 @@ public class Watch {
         return taskCompletionSource.getTask();
     }
 
+    public Task<Void> deleteNotification(final NotificationData notificationData) {
+        final TaskCompletionSource<Void> taskCompletionSource = new TaskCompletionSource<>();
+        getServiceInstance().continueWith(new Continuation<TransportService, Object>() {
+            @Override
+            public Object then(@NonNull Task<TransportService> task) {
+                if (task.getResult() != null)
+                    task.getResult().send(Transport.DELETE_NOTIFICATION, notificationData, taskCompletionSource);
+                return null;
+            }
+        });
+        return taskCompletionSource.getTask();
+    }
+
     public Task<Void> postMediaInfo(final MediaData mediaData) {
         final TaskCompletionSource<Void> taskCompletionSource = new TaskCompletionSource<>();
         getServiceInstance().continueWith(new Continuation<TransportService, Object>() {

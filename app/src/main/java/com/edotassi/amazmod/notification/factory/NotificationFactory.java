@@ -41,6 +41,10 @@ import amazmod.com.transport.util.ImageUtils;
 
 public class NotificationFactory {
     public static NotificationData fromStatusBarNotification(Context context, StatusBarNotification statusBarNotification) {
+        return fromStatusBarNotification(context, statusBarNotification, false);
+    }
+
+    public static NotificationData fromStatusBarNotification(Context context, StatusBarNotification statusBarNotification, boolean fast) {
 
         NotificationData notificationData = new NotificationData();
         Notification notification = statusBarNotification.getNotification();
@@ -87,7 +91,8 @@ public class NotificationFactory {
             }
         }
 
-        extractImagesFromNotification(context, statusBarNotification, notificationData);
+        if (!fast)
+            extractImagesFromNotification(context, statusBarNotification, notificationData);
 
         notificationData.setId(statusBarNotification.getId());
         notificationData.setKey(statusBarNotification.getKey());

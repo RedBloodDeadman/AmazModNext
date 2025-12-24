@@ -84,6 +84,7 @@ class AboutActivity : BaseAppCompatActivity(), DataTransportResultCallback {
             R.id.action_activity_about_custom_ui_test -> sendTestMessage('C')
             R.id.action_activity_about_standard_test -> sendTestMessage('S')
             R.id.action_activity_about_notification_test -> sendTestMessage('N')
+            R.id.action_activity_about_call_test -> sendTestMessage('O')
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -114,6 +115,12 @@ class AboutActivity : BaseAppCompatActivity(), DataTransportResultCallback {
             'N' -> {
                 notificationData.forceCustom = false
                 sendNotificationWithStandardUI(notificationData)
+                return
+            }
+            'O' -> {
+                notificationData.forceCustom = false
+                //sendNotificationWithStandardUI(notificationData)
+                sendCall(notificationData)
                 return
             }
 
@@ -224,6 +231,10 @@ class AboutActivity : BaseAppCompatActivity(), DataTransportResultCallback {
         val sbnd = StatusBarNotificationData.from(this, sbn, false)
         dataBundle.putParcelable("data", sbnd)
         TransportService.sendWithTransporterHuami("add", null, dataBundle, this)
+    }
+
+    private fun sendCall(nd: NotificationData){
+        TransportService.sendWithTransporterHuamiCall(Transport.ACTION_INCOMMING_CALL, null)
     }
 
     private fun loadReplies(): List<Reply> {

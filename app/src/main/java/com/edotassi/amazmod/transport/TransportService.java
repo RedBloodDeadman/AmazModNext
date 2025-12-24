@@ -96,6 +96,7 @@ public class TransportService extends Service implements Transporter.DataListene
     private static Transporter transporterAmazMod,         // Used with generic data (in/out)
             transporterNotifications,   // Used to send Custom UI notifications to watch (out)
             transporterHuami,           // Used with Standard UI notifications (out)
+            transporterHuamiCall,           // Used with Standard UI call (out)
             transporterCompanion,       // Used with watch/companion data (in/out)
             transporterSync,            // Used with sync (in/out)
             transporterHealth,          // Used to pull data (in/out)
@@ -111,6 +112,7 @@ public class TransportService extends Service implements Transporter.DataListene
     public static final char TRANSPORT_AMAZMOD = 'A';
     public static final char TRANSPORT_NOTIFICATIONS = 'N';
     public static final char TRANSPORT_HUAMI = 'H';
+    public static final char TRANSPORT_HUAMI_CALL = 'O';
     public static final char TRANSPORT_COMPANION = 'C';
     public static final char TRANSPORT_HEALTH = 'D';
     public static final char TRANSPORTER_SYNC = 'S';
@@ -195,6 +197,12 @@ public class TransportService extends Service implements Transporter.DataListene
         transporterHuami = TransporterClassic.get(this, "com.huami.action.notification");
         if (!transporterHuami.isTransportServiceConnected()) {
             transporterHuami.connectTransportService();
+            AmazModApplication.setWatchConnected(false);
+        }
+        // Huami Stock Call Transporter
+        transporterHuamiCall = TransporterClassic.get(this, "transport_module_calling_to_wear");
+        if (!transporterHuamiCall.isTransportServiceConnected()) {
+            transporterHuamiCall.connectTransportService();
             AmazModApplication.setWatchConnected(false);
         }
         // Huami Companion Transporter
@@ -335,6 +343,12 @@ public class TransportService extends Service implements Transporter.DataListene
             transporterHuami = null;
         }
 
+        if (transporterHuamiCall.isTransportServiceConnected()) {
+            Logger.info("disconnectTransports disconnecting transporterHuamiCall…");
+            transporterHuamiCall.disconnectTransportService();
+            transporterHuamiCall = null;
+        }
+
         if (transporterCompanion.isTransportServiceConnected()) {
             Logger.info("disconnectTransports disconnecting transporterCompanion…");
             transporterCompanion.disconnectTransportService();
@@ -390,6 +404,15 @@ public class TransportService extends Service implements Transporter.DataListene
         }
     }
 
+    public static void connectTransporterHuamiCall() {
+        if (!transporterHuamiCall.isTransportServiceConnected()) {
+            Logger.warn("onStartJob transporterHuamiCall not connected, connecting...");
+            transporterHuamiCall.connectTransportService();
+        } else {
+            Logger.info("TransportService transporterHuamiCall already connected");
+        }
+    }
+
     public static void connectTransporterCompanion() {
         if (!transporterCompanion.isTransportServiceConnected()) {
             Logger.warn("onStartJob transporterCompanion not connected, connecting...");
@@ -420,6 +443,10 @@ public class TransportService extends Service implements Transporter.DataListene
         return transporterHuami.isAvailable();
     }
 
+    public static boolean isTransporterHuamiCallAvailable() {
+        return transporterHuamiCall.isAvailable();
+    }
+
     public static boolean isTransporterHuamiCompanion() {
         return transporterCompanion.isAvailable();
     }
@@ -434,6 +461,10 @@ public class TransportService extends Service implements Transporter.DataListene
 
     public static boolean isTransporterHuamiConnected() {
         return transporterHuami.isTransportServiceConnected();
+    }
+
+    public static boolean isTransporterHuamiCallConnected() {
+        return transporterHuamiCall.isTransportServiceConnected();
     }
 
     public static boolean isTransporterCompanionConnected() {
@@ -554,6 +585,13 @@ public class TransportService extends Service implements Transporter.DataListene
         send(TRANSPORT_HUAMI, action, dataBundle, waiter);
     }
 
+    public void sendWithHuamiCall(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
+        DataBundle dataBundle = new DataBundle();
+        if (transportable != null)
+            transportable.toDataBundle(dataBundle);
+        send(TRANSPORT_HUAMI_CALL, action, dataBundle, waiter);
+    }
+
     public void sendWithSleep(final String action, Transportable transportable, final TaskCompletionSource<Void> waiter) {
         DataBundle dataBundle = new DataBundle();
         if (transportable != null)
@@ -661,6 +699,10 @@ public class TransportService extends Service implements Transporter.DataListene
         getDataTransportResult(TRANSPORT_HUAMI, action, null, dataBundle, null);
     }
 
+    public static void sendWithTransporterHuamiCall(String action, DataBundle dataBundle) {
+        getDataTransportResult(TRANSPORT_HUAMI_CALL, action, null, dataBundle, null);
+    }
+
     public static void sendWithTransporterCompanion(String action, DataBundle dataBundle) {
         getDataTransportResult(TRANSPORT_COMPANION, action, null, dataBundle, null);
     }
@@ -675,6 +717,10 @@ public class TransportService extends Service implements Transporter.DataListene
 
     public static void sendWithTransporterHuami(String action, String uuid, DataBundle dataBundle, DataTransportResultCallback callback) {
         getDataTransportResult(TRANSPORT_HUAMI, action, uuid, dataBundle, callback);
+    }
+
+    public static void sendWithTransporterHuamiCall(String action, String uuid, DataBundle dataBundle, DataTransportResultCallback callback) {
+        getDataTransportResult(TRANSPORT_HUAMI_CALL, action, uuid, dataBundle, callback);
     }
 
     public static void sendWithTransporterCompanion(String action, DataBundle dataBundle, DataTransportResultCallback callback) {
@@ -731,6 +777,9 @@ public class TransportService extends Service implements Transporter.DataListene
             case TRANSPORT_HUAMI:
                 Logger.debug("Sending using transporter Huami with action: {}", action);
                 return transporterHuami;
+            case TRANSPORT_HUAMI_CALL:
+                Logger.debug("Sending using transporter HuamiCall with action: {}", action);
+                return transporterHuamiCall;
             case TRANSPORT_COMPANION:
                 Logger.debug("Sending using transporter Companion with action: {}", action);
                 return transporterCompanion;

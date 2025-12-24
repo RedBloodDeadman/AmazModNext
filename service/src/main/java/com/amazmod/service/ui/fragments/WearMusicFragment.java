@@ -210,14 +210,14 @@ public class WearMusicFragment extends Fragment implements MediaDataManager.Data
     }
 
     private void next() {
-        loading(true);
+        //loading(true);
         vibrate();
         if (!transporter.isTransportServiceConnected()) transporter.connectTransportService();
         new Handler().post(() -> transporter.send(Transport.NEXT_MUSIC));
     }
 
     private void prev() {
-        loading(true);
+        //loading(true);
         vibrate();
         if (!transporter.isTransportServiceConnected()) transporter.connectTransportService();
         new Handler().post(() -> transporter.send(Transport.PREV_MUSIC));

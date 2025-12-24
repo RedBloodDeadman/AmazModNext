@@ -46,8 +46,10 @@ import com.amazmod.service.Constants;
 import com.amazmod.service.R;
 import com.amazmod.service.events.ActionNotificationEvent;
 import com.amazmod.service.events.IntentNotificationEvent;
+import com.amazmod.service.events.NotificationStatus;
 import com.amazmod.service.events.ReplyNotificationEvent;
 import com.amazmod.service.events.SilenceApplicationEvent;
+import com.amazmod.service.helper.NotificationStatusManager;
 import com.amazmod.service.settings.SettingsManager;
 import com.amazmod.service.sleep.sleepConstants;
 import com.amazmod.service.support.ActivityFinishRunnable;
@@ -66,6 +68,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import amazmod.com.models.Reply;
 import amazmod.com.transport.data.NotificationData;
@@ -74,7 +77,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class NotificationWearActivity extends Activity
-        implements DelayedConfirmationView.DelayedConfirmationListener {
+        implements DelayedConfirmationView.DelayedConfirmationListener, NotificationStatusManager.DataListener {
     @BindView(R.id.fragment_custom_root_layout)
     BoxInsetLayout rootLayout;
 
@@ -205,6 +208,7 @@ public class NotificationWearActivity extends Activity
 
         onAttach();
         setupBtnListener();
+        NotificationStatusManager.getInstance().addListener(this);
 
         handler = new Handler();
         activityFinishRunnable = new ActivityFinishRunnable(this);
@@ -276,6 +280,7 @@ public class NotificationWearActivity extends Activity
     protected void onDestroy() {
         super.onDestroy();
         buttonListener.stop();
+        NotificationStatusManager.getInstance().removeListener(this);
 //        sm.unregisterListener(this);
     }
 
@@ -538,8 +543,6 @@ public class NotificationWearActivity extends Activity
 
     }
 
-    //#todo mediacontrol
-    //https://github.com/Freeyourgadget/Gadgetbridge/blob/master/app/src/main/java/nodomain/freeyourgadget/gadgetbridge/service/receivers/GBMusicControlReceiver.java
     private void initButtonsContainer() {
         String[] replyTitles = notificationData.getReplyTitles();
         String[] actionTitles = notificationData.getActionTitles();
@@ -1060,6 +1063,21 @@ public class NotificationWearActivity extends Activity
                         break;
                 }
         });
+    }
+
+    @Override
+    public void onDataUpdated(NotificationStatus data) {
+        Logger.debug(this.key);
+        Logger.debug(data.getAction() + ": " + data.getKey());
+        if (data.getAction().equals("del") && Objects.equals(this.key, data.getKey())){
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Logger.debug("Closing activity now!");
+                    finish();
+                }
+            });
+        }
     }
 
 //

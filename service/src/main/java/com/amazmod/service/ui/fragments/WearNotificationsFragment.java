@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.amazmod.service.R;
 import com.amazmod.service.adapters.NotificationListAdapter;
+import com.amazmod.service.events.NotificationStatus;
+import com.amazmod.service.helper.NotificationStatusManager;
 import com.amazmod.service.helper.RecyclerTouchListener;
 import com.amazmod.service.support.NotificationInfo;
 import com.amazmod.service.support.NotificationStore;
@@ -44,7 +46,7 @@ import io.reactivex.Flowable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
-public class WearNotificationsFragment extends Fragment {
+public class WearNotificationsFragment extends Fragment implements NotificationStatusManager.DataListener {
 
     static WearNotificationsFragment instance = null;
 
@@ -102,7 +104,7 @@ public class WearNotificationsFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Logger.info("WearNotificationsFragment onResume");
-        updateNotificationsList();
+        //updateNotificationsList();
         isMainViewShow = true;
     }
 
@@ -123,6 +125,7 @@ public class WearNotificationsFragment extends Fragment {
         Logger.info("WearNotificationsFragment onViewCreated");
         init();
         setupBtnListener();
+        NotificationStatusManager.getInstance().addListener(this);
     }
 
     @Override
@@ -133,6 +136,7 @@ public class WearNotificationsFragment extends Fragment {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        NotificationStatusManager.getInstance().removeListener(this);
     }
 
     @Override
@@ -142,6 +146,7 @@ public class WearNotificationsFragment extends Fragment {
     }
 
     boolean isMainViewShow = false;
+
     @Override
     public void onPause() {
         super.onPause();
@@ -149,6 +154,7 @@ public class WearNotificationsFragment extends Fragment {
     }
 
     int pos = 0;
+
     private void setupBtnListener() {
         buttonListener.start(mContext, keyEvent -> {
             if (isMainViewShow && SystemProperties.isStratos3())
@@ -243,15 +249,15 @@ public class WearNotificationsFragment extends Fragment {
             }
         }));
 
-        mHeader.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                listView.setVisibility(View.GONE);
-                progressBar.setVisibility(View.VISIBLE);
-                updateNotificationsList();
-            }
-
-        });
+//        mHeader.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                listView.setVisibility(View.GONE);
+//                progressBar.setVisibility(View.VISIBLE);
+//                updateNotificationsList();
+//            }
+//
+//        });
 
         mHeader.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -437,5 +443,11 @@ public class WearNotificationsFragment extends Fragment {
 
     public static WearNotificationsFragment getInstance() {
         return instance;
+    }
+
+    @Override
+    public void onDataUpdated(NotificationStatus data) {
+        Logger.trace(data.getAction() + ": " + data.getKey());
+        updateNotificationsList();
     }
 }

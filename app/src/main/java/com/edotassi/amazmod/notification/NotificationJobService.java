@@ -205,6 +205,67 @@ public class NotificationJobService extends JobService implements TransportServi
         }
     }
 
+    private void processStandardCallPosted(final String uuid) {
+
+        Logger.debug("processStandardNotificationPosted uuid: " + uuid + " \\ try: " + retries);
+
+        DataBundle dataBundle = NotificationStore.getStandardNotification(uuid);
+
+        if(!BluetoothAdapter.getDefaultAdapter().isEnabled()){
+            AmazModApplication.setWatchConnected(false);
+            Logger.warn("Bluetooth is disabled");
+            return;
+        }
+
+        // Check if transporter is connected
+        if (TransportService.isTransporterHuamiCallConnected()) {
+            Logger.info("processStandardCallPosted transport already connected");
+            AmazModApplication.setWatchConnected(true);
+        } else {
+            Logger.warn("processStandardCallPosted transport not connected, connecting...");
+            TransportService.connectTransporterHuamiCall();
+            AmazModApplication.setWatchConnected(false);
+        }
+
+        Logger.info("processStandardCallPosted transporterHuamiCall.isAvailable: " + TransportService.isTransporterHuamiCallAvailable());
+
+        if (dataBundle != null) {
+            TransportService.sendWithTransporterHuami("add", uuid, dataBundle, this);
+
+            /*
+            result = dataTransportResult == null ? "" : dataTransportResult.toString();
+
+            if (result.toLowerCase().contains("ok")) {
+                Logger.debug("processStandardNotificationPosted OK");
+                NotificationStore.removeStandardNotification(uuid);
+                if (pendingJobs.containsKey(uuid))
+                    pendingJobs.remove(uuid);
+                jobFinished(params, false);
+            } else {
+                Logger.debug("processStandardNotificationPosted try: " + retries);
+                if (AmazModApplication.isWatchConnected() && retries < 4) {
+                    retries++;
+                    SystemClock.sleep(300);
+                    processStandardNotificationPosted(uuid, mode);
+                } else {
+                    Logger.debug("processStandardNotificationPosted rescheduling…");
+                    retries = 0;
+                    pendingJobs.put(uuid, params);
+                    jobFinished(params, true);
+                }
+            }
+            */
+        } else {
+            if (pendingJobs.containsKey(uuid)) {
+                pendingJobs.remove(uuid);
+                jobParams.remove(uuid);
+            }
+            if (NotificationStore.standardNotifications.containsKey(uuid))
+                NotificationStore.removeStandardNotification(uuid);
+            jobFinished(params, false);
+        }
+    }
+
     public void processNotificationRemoved(final String uuid) {
 
         boolean isNotificationQueued = false;
